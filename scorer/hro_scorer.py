@@ -65,6 +65,11 @@ def score_log(log: dict, classification: dict) -> dict:
     if not raw.strip():
         raise ValueError(f"Empty response from API for log {log.get('log_id')}")
 
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1]
+        raw = raw.rsplit("```", 1)[0]
+
     result = json.loads(raw)
     result["log_id"] = log.get("log_id", "unknown")
     return result
