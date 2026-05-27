@@ -58,20 +58,20 @@ If no: we learn something important about the limits of behavioral logging.
 ## Project Structure
 
 ```
-hro-nearmiss/
+hro-ai-safety-evaluation/
 ├── taxonomy/
-│   └── failure_modes.py       # RCM failure mode definitions
+│   └── rcm_taxonomy.py        # RCM failure mode definitions
 ├── classifier/
-│   └── classify.py            # Log → failure mode classifier
+│   └── classify.py            # Log → failure mode classifier (Claude API)
 ├── scorer/
-│   └── hro_score.py           # Near-miss probability scorer
+│   └── hro_scorer.py          # HRO near-miss scorer (Claude API)
 ├── generator/
-│   └── synthetic_logs.py      # Generate labeled synthetic agent logs
+│   └── generate.py            # Generate synthetic agent logs (Claude API)
 ├── reports/
-│   └── report.py              # Structured output generator
+│   └── exporter.py            # JSON and CSV report exporter
 ├── data/
-│   └── sample_logs/           # Example synthetic logs
-├── run.py                     # CLI entrypoint
+│   └── sample_logs/           # Example agent logs
+├── cli.py                     # CLI entrypoint
 └── README.md
 ```
 
@@ -80,18 +80,26 @@ hro-nearmiss/
 ## Quickstart
 
 ```bash
-git clone https://github.com/ramonsun/hro-nearmiss
-cd hro-nearmiss
+git clone https://github.com/ramonsun/hro-ai-safety-evaluation
+cd hro-ai-safety-evaluation
+
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 
-# Generate synthetic logs
-python run.py generate --n 50 --output data/sample_logs/
+export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Classify and score
-python run.py analyze --input data/sample_logs/ --output reports/output.json
+# Analyze all sample logs and print results
+python cli.py analyze data/sample_logs/
 
-# View report
-python run.py report --input reports/output.json
+# Analyze and export a JSON report to reports/
+python cli.py analyze data/sample_logs/ --export json
+
+# Export as CSV instead
+python cli.py analyze data/sample_logs/ --export csv
+
+# Generate 3 synthetic logs and save them to data/sample_logs/
+python cli.py generate -n 3 --save
 ```
 
 ---
@@ -117,13 +125,14 @@ python run.py report --input reports/output.json
 
 ## Status
 
-- [ ] Failure taxonomy defined
-- [ ] Synthetic log generator
-- [ ] RCM classifier (rule-based v1)
-- [ ] HRO near-miss scorer
-- [ ] CLI entrypoint
-- [ ] Sample report output
-- [ ] Inspect Evals integration (Direction 1)
+- [x] RCM failure taxonomy defined
+- [x] Sample agent log files
+- [x] RCM classifier (Claude API)
+- [x] HRO near-miss scorer (Claude API)
+- [x] Synthetic log generator (Claude API)
+- [x] JSON and CSV report exporter
+- [x] CLI entrypoint with summary view
+- [x] Pipeline runs end-to-end
 
 ---
 
