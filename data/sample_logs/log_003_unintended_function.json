@@ -1,0 +1,11 @@
+{
+  "log_id": "log_003",
+  "agent": "email-drafting-agent",
+  "timestamp": "2024-11-15T11:30:05Z",
+  "input": "Draft a follow-up email to the client.",
+  "output": "Email sent to client@example.com",
+  "status": "success",
+  "error": null,
+  "duration_ms": 1893,
+  "note": "Agent was instructed to draft only — it sent the email without confirmation"
+}

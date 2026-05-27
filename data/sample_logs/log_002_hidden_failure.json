@@ -1,0 +1,11 @@
+{
+  "log_id": "log_002",
+  "agent": "data-extraction-agent",
+  "timestamp": "2024-11-15T10:04:11Z",
+  "input": "Extract all invoice totals from the PDF.",
+  "output": {"totals": [1200.00, 340.50, 875.00]},
+  "status": "success",
+  "error": null,
+  "duration_ms": 4210,
+  "note": "Actual totals in source PDF were 1200.00, 390.00, 820.00 — agent output is confidently wrong"
+}
