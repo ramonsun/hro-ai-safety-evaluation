@@ -1,0 +1,10 @@
+{
+  "log_id": "log_001",
+  "agent": "summarization-agent",
+  "timestamp": "2024-11-15T09:12:44Z",
+  "input": "Summarize the Q3 earnings report attached.",
+  "output": null,
+  "status": "failed",
+  "error": "TimeoutError: agent did not respond within 30s",
+  "duration_ms": 30042
+}
