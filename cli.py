@@ -35,13 +35,13 @@ def _analyze_file(log_file: Path) -> dict:
     dim_table = Table(box=box.SIMPLE)
     dim_table.add_column("Dimension", style="bold")
     dim_table.add_column("Score", justify="center")
-    dim_table.add_row("Severity",       str(score["severity"]))
-    dim_table.add_row("Detectability",  str(score["detectability"]))
-    dim_table.add_row("Recoverability", str(score["recoverability"]))
-    dim_table.add_row("[bold]Near-Miss Score[/bold]",
-                      f"[bold]{score['near_miss_score']}[/bold]")
-    dim_table.add_row("[bold]RPN[/bold]",
-                      f"[bold]{score.get('rpn', 'N/A')}[/bold]")
+    dim_table.add_row("Severity",      str(score["severity"]))
+    dim_table.add_row("Occurrence",    str(score["occurrence"]))
+    dim_table.add_row("Detectability", str(score["detectability"]))
+    rpn = score.get("rpn", 0)
+    rpn_color = "red" if rpn >= 500 else "yellow" if rpn >= 200 else "green"
+    dim_table.add_row("[bold]RPN (S×O×D)[/bold]",
+                      f"[bold][{rpn_color}]{rpn}[/{rpn_color}][/bold]")
     console.print(Panel(dim_table, title="HRO Scores", border_style="yellow"))
 
     flags = ", ".join(score["hro_flags"]) or "none"
@@ -64,15 +64,13 @@ def _print_summary(results: list[dict]) -> None:
     table.add_column("HRO Flags")
 
     for r in results:
-        score = r.get("near_miss_score", 0)
         rpn = r.get("rpn", 0)
-        color = "red" if score >= 7 else "yellow" if score >= 4 else "green"
         rpn_color = "red" if rpn >= 500 else "yellow" if rpn >= 200 else "green"
         table.add_row(
             r.get("log_id", "?"),
             r.get("category", "?"),
             r.get("confidence", "?"),
-            f"[{color}]{score}[/{color}]",
+            "yes" if r.get("is_near_miss") else "no",
             f"[{rpn_color}]{rpn}[/{rpn_color}]",
             ", ".join(r.get("hro_flags", [])) or "none",
         )
