@@ -27,9 +27,9 @@ A Python CLI that:
 1. Ingests agent interaction logs (synthetic or real)
 2. Applies a **rule-based pre-filter** (keyword heuristics) — high-confidence matches skip the API call entirely
 3. Classifies each log entry using an **RCM-derived failure taxonomy** (5 failure modes) via Claude
-4. Scores each log with **RPN = Severity × Occurrence × Detectability** (FMEA standard, max 1000)
-5. Runs **session analysis**: near-miss rate per 100 interactions, mode distribution, RPN trajectory
-6. Outputs a structured report: what almost failed, RPN, HRO flags, recommendation
+4. Scores each log with **HRO Signal Strength = (Severity × Detectability) / 10** (scale 0–10)
+5. Runs **session analysis**: near-miss rate per 100 interactions, mode distribution, signal trajectory
+6. Outputs a structured report: what almost failed, signal strength, HRO flags, recommendation
 
 **RCM** (Reliability Centered Maintenance) provides the vocabulary to define what a near-miss *is* in agent logs.  
 **HRO** provides the cultural protocol for what to *do* with that signal.
@@ -73,15 +73,21 @@ hro-ai-safety-evaluation/
 │   ├── classify.py            # Log → failure mode classifier (pre-filter + Claude API)
 │   └── pre_filter.py          # Rule-based keyword pre-filter (skips API on clear matches)
 ├── scorer/
-│   └── hro_scorer.py          # HRO near-miss scorer — RPN = S×O×D (Claude API)
+│   └── hro_scorer.py          # HRO near-miss scorer — Signal Strength = (S×D)/10
 ├── generator/
 │   └── generate.py            # Generate synthetic agent logs (Claude API)
 ├── reports/
 │   ├── exporter.py            # JSON and CSV report exporter
-│   └── session_analysis.py    # Session-level aggregation (near-miss rate, RPN trajectory)
+│   └── session_analysis.py    # Session-level aggregation (near-miss rate, signal trajectory)
+├── experiment/
+│   ├── session_analysis.py    # Toy experiment: near-miss rate vs eval failure rate
+│   └── results.json           # Experiment output (4 sessions × 10 logs)
+├── tests/
+│   ├── test_taxonomy.py       # 5 taxonomy tests (pytest)
+│   └── test_classifier.py     # 5 classifier tests (pytest, no API calls)
 ├── data/
-│   └── sample_logs/           # Example agent logs (incl. validated near-miss logs)
-├── inspect_plugin.py          # Stub: Inspect Evals post-processing integration
+│   └── sample_logs/           # 5 near-miss logs + 3 full-failure logs
+├── inspect_plugin.py          # Inspect Evals post-processing integration
 ├── cli.py                     # CLI entrypoint (analyze, generate, --session flag)
 └── README.md
 ```
@@ -109,8 +115,14 @@ python cli.py analyze data/sample_logs/ --export json
 # Export as CSV instead
 python cli.py analyze data/sample_logs/ --export csv
 
-# Run session analysis (near-miss rate, mode distribution, RPN trajectory)
+# Run session analysis (near-miss rate, mode distribution, signal trajectory)
 python cli.py analyze data/sample_logs/ --session
+
+# Run HRO scorer as post-processor on an Inspect Evals log directory
+python inspect_plugin.py --log-dir /path/to/inspect/logs --export json
+
+# Run tests
+pytest tests/
 
 # Generate 3 synthetic logs and save them to data/sample_logs/
 python cli.py generate -n 3 --save
@@ -131,7 +143,7 @@ python cli.py generate -n 3 --save
 ## Theoretical Grounding
 
 - **HRO Theory:** Weick & Roberts (1993), Weick, Sutcliffe & Obstfeld (1999)
-- **RCM & RPN:** Nowlan & Heap (1978) — *Reliability-Centered Maintenance*, United Airlines / US Navy. RPN (Risk Priority Number = Severity × Occurrence × Detectability) is the standard FMEA prioritization formula from this lineage, adopted here to rank near-miss severity across agent logs.
+- **RCM & FMEA scoring:** Nowlan & Heap (1978) — *Reliability-Centered Maintenance*, United Airlines / US Navy. The standard FMEA Risk Priority Number (RPN = Severity × Occurrence × Detectability) is the scoring lineage this project draws from. Occurrence is omitted here because it has no statistical meaning at n=1 per log; the adapted formula is HRO Signal Strength = (Severity × Detectability) / 10, scale 0–10.
 - **Tenerife as case study:** Deadliest aviation accident in history (583 fatalities, 27 March 1977). The KLM first officer expressed doubt about takeoff clearance to Captain van Zanten, but the challenge was too weak and too deferential to override the captain's authority. Post-Tenerife reforms included mandatory Crew Resource Management (CRM, NASA/United 1979, FAA 1981), standardized ICAO radiotelephony phraseology (1977–1980), and expansion of non-punitive reporting culture. The Aviation Safety Reporting System (ASRS) had launched in 1976; Tenerife accelerated its adoption. Fatality rates per flight hour declined sharply from the 1980s onward as these operational practices spread across the industry. Academics later labeled this pattern of operational discipline "High Reliability Organization" theory.
 - **Chernobyl as multi-mode case study:** The 1986 disaster exhibited operator behaviors that map to all five failure modes — drift from test protocol (`GOAL_DRIFT`), bypass of automatic safety systems to maintain an unstable low-power state (`AUTHORITY_CONFUSION`), loss of situational awareness during the overnight shift (`CONTEXT_LOSS`), late insertion of control rods with a fatal reactor design flaw (`TOOL_MISUSE`), and alarm fatigue in an overwhelmed control room (`ESCALATION_FAILURE`). Critically, the RBMK reactor's design flaws (positive void coefficient, graphite-tipped control rods) were the primary cause; the modes describe *how* the socio-technical system failed, not *who* to blame. In AI safety, this maps to distinguishing agent behavior from eval design flaws.
 - **AI safety gap:** Current evals report binary pass/fail scores. Frontier labs collect rich intermediate traces, logprobs, and refusal rates, but no standardized framework exists to classify and act on near-miss signals within those traces. No near-miss reporting protocol equivalent to aviation's ASRS exists for AI labs.
@@ -140,32 +152,51 @@ python cli.py generate -n 3 --save
 
 ---
 
+## Preliminary Evidence
+
+Toy experiment (`experiment/session_analysis.py`): 4 synthetic agent sessions × 10 logs each, varying agent aggressiveness. Near-miss rate and eval failure rate were tracked independently per session.
+
+| Session | Near-miss rate | Eval failure rate | Avg signal strength |
+|---------|---------------|-------------------|---------------------|
+| Conservative | 10% | 0% | 2.05 |
+| Standard | 30% | 20% | 3.66 |
+| Aggressive | 60% | 50% | 5.43 |
+| Poorly configured | 80% | 80% | 7.41 |
+
+**Pearson r = 0.996** between near-miss rate and eval failure rate across sessions. **Caveat:** this is synthetic data designed to illustrate the hypothesis — it is not empirical evidence. Real validation requires running the scorer against published AI incident reports (Direction 2).
+
+---
+
 ## Status
 
 - [x] RCM failure taxonomy defined (5 canonical modes)
-- [x] Sample agent logs — including 2 validated near-miss logs
-- [x] Rule-based pre-filter (keyword fast path, skips API for clear matches)
+- [x] Sample agent logs — 5 near-miss logs (all modes) + 3 full-failure logs
+- [x] Rule-based pre-filter (keyword fast path, skips API for clear matches, `[prefilter]` tag in terminal)
 - [x] RCM classifier (Claude API, temperature=0, forced to 5 modes)
 - [x] Operational near-miss definition (unsafe state + recovery + evidence)
-- [x] HRO near-miss scorer — RPN = Severity × Occurrence × Detectability
-- [x] Deterministic HRO flags (failure mode → principle mapping in code)
-- [x] Session analysis (near-miss rate per 100, mode distribution, RPN trajectory)
+- [x] HRO Signal Strength scorer = (Severity × Detectability) / 10
+- [x] Deterministic HRO flags + `preoccupation_with_failure` always on near-miss logs
+- [x] Template-based recommendations referencing agent, task_type, tool_used
+- [x] Session analysis (near-miss rate per 100, mode distribution, signal trajectory)
+- [x] Toy experiment — near-miss rate vs eval failure rate (r=0.996, synthetic data)
+- [x] pytest test suite (10 tests, no API calls required)
+- [x] Inspect Evals post-processing integration (`inspect_plugin.py`)
 - [x] Synthetic log generator (Claude API)
 - [x] JSON and CSV report exporter
-- [x] CLI entrypoint with `--session` flag and RPN summary table
+- [x] CLI entrypoint with `--session` flag and signal strength summary table
 - [x] Pipeline runs end-to-end
-- [ ] Inspect Evals integration (stub only — `inspect_plugin.py`)
 
 ---
 
 ## Limitations & Known Issues
 
-1. ~~**Near-miss vs full miss**~~ — **Fixed:** classifier now applies a strict 3-criterion operational definition and returns `is_near_miss` on every log.
-2. ~~**Frequency not implemented**~~ — **Fixed:** `--session` flag computes near-miss rate per 100 interactions, mode distribution, and RPN trajectory across all logs in a directory.
-3. **Taxonomy assumptions:** The 5 failure modes are adapted from RCM theory, not validated against real AI incident data — different assumptions could produce different or additional modes.
-4. **Coverage:** Aviation/nuclear taxonomies use 40+ modes; 5 modes may miss failure patterns not yet observed in synthetic logs.
-5. ~~**Non-deterministic scoring**~~ — **Partially fixed:** `temperature=0` on all API calls reduces variance; pre-filter path is fully deterministic. LLM scores for ambiguous logs still vary slightly across API versions.
-6. **Inspect integration:** `inspect_plugin.py` is a stub — requires `inspect_ai` install and schema mapping work to function.
+1. ~~**Near-miss vs full miss**~~ — **Fixed:** classifier applies strict 3-criterion definition and returns `is_near_miss` boolean on every log.
+2. ~~**Frequency not implemented**~~ — **Fixed:** `--session` flag computes near-miss rate per 100 interactions, mode distribution, and signal trajectory.
+3. ~~**Non-deterministic scoring**~~ — **Partially fixed:** `temperature=0` on all API calls; pre-filter path is fully deterministic. LLM scores for ambiguous logs still vary slightly across model versions.
+4. **Taxonomy assumptions:** The 5 failure modes are adapted from RCM theory, not validated against real AI incident data — different assumptions could produce different or additional modes.
+5. **Coverage:** Aviation/nuclear taxonomies use 40+ modes; 5 modes may miss failure patterns not yet observed in synthetic logs.
+6. **Preliminary evidence is synthetic:** The r=0.996 correlation is from designed synthetic data, not real agent logs. Real validation requires running against published AI incident reports.
+7. **Inspect integration requires `inspect_ai`:** `inspect_plugin.py` implements the conversion but the `.eval` binary log format requires `pip install inspect-ai` and further testing.
 
 ---
 
