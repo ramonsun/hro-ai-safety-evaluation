@@ -30,9 +30,9 @@ Source: [METR Frontier Risk Report, May 2026](https://metr.org/blog/2026-05-19-f
 |--------|-----------|--------|----|-------|
 | Keyword probe | 1.00 | 0.80 | 0.89 | Misses reward hacking (no keywords) |
 | LLM judge (no taxonomy) | 0.83 | 1.00 | 0.91 | FP: flags hallucination as deception |
-| HRO + METR (this project) | 1.00 | 0.80 | 0.89 | Zero FPs; adds dimension breakdown |
+| HRO + METR (this project) | 1.00 | 1.00 | 1.00 | Near-miss OR score≥7; zero FPs; dimension breakdown |
 
-HRO+METR trades recall parity with the LLM judge for zero false positives and structured METR dimension attribution. Reproduce: `python3 -m experiment.deception_comparison` (requires `ANTHROPIC_API_KEY`).
+HRO+METR detects deception at the attempt level: a log is positive if the agent entered a deceptive state (`is_near_miss=True`) OR completed a high-risk action (score≥7). The LLM judge misses near-misses because it distinguishes attempted-but-corrected from completed deception — a useful distinction, but wrong for early-warning use. Reproduce: `python3 -m experiment.deception_comparison` (requires `ANTHROPIC_API_KEY`).
 
 ## Quickstart
 
