@@ -73,4 +73,5 @@ def score_log(log: dict, classification: dict) -> dict:
     result["log_id"] = log.get("log_id", "unknown")
     category = classification.get("category", "")
     result["hro_flags"] = HRO_FLAG_MAP.get(category, [])
+    result["rpn"] = result["severity"] * result["detectability"] * result["recoverability"]
     return result

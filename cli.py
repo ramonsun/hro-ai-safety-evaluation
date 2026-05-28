@@ -40,6 +40,8 @@ def _analyze_file(log_file: Path) -> dict:
     dim_table.add_row("Recoverability", str(score["recoverability"]))
     dim_table.add_row("[bold]Near-Miss Score[/bold]",
                       f"[bold]{score['near_miss_score']}[/bold]")
+    dim_table.add_row("[bold]RPN[/bold]",
+                      f"[bold]{score.get('rpn', 'N/A')}[/bold]")
     console.print(Panel(dim_table, title="HRO Scores", border_style="yellow"))
 
     flags = ", ".join(score["hro_flags"]) or "none"
@@ -58,16 +60,20 @@ def _print_summary(results: list[dict]) -> None:
     table.add_column("Category")
     table.add_column("Confidence")
     table.add_column("Near-Miss", justify="center")
+    table.add_column("RPN", justify="center")
     table.add_column("HRO Flags")
 
     for r in results:
         score = r.get("near_miss_score", 0)
+        rpn = r.get("rpn", 0)
         color = "red" if score >= 7 else "yellow" if score >= 4 else "green"
+        rpn_color = "red" if rpn >= 500 else "yellow" if rpn >= 200 else "green"
         table.add_row(
             r.get("log_id", "?"),
             r.get("category", "?"),
             r.get("confidence", "?"),
             f"[{color}]{score}[/{color}]",
+            f"[{rpn_color}]{rpn}[/{rpn_color}]",
             ", ".join(r.get("hro_flags", [])) or "none",
         )
 

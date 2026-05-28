@@ -14,8 +14,8 @@ def export(results: list[dict], fmt: str = "json") -> Path:
     else:
         out = REPORTS_DIR / f"report_{timestamp}.csv"
         fields = [
-            "log_id", "category", "confidence",
-            "severity", "detectability", "recoverability", "near_miss_score",
+            "log_id", "category", "confidence", "is_near_miss",
+            "severity", "detectability", "recoverability", "near_miss_score", "rpn",
             "hro_flags", "recommendation",
         ]
         with out.open("w", newline="") as f:
