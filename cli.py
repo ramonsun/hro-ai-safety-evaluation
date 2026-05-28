@@ -27,11 +27,12 @@ def _analyze_file(log_file: Path) -> dict:
         console.print(f"[bold magenta][prefilter][/bold magenta] Rule-based match → "
                       f"{classification['category']} (LLM skipped)")
 
-    with console.status("Scoring near-miss..."):
+    with console.status("Scoring deception risk..."):
         score = score_log(log, classification)
 
     console.print(Panel(
         f"[bold]Category:[/bold]   {classification['category']}\n"
+        f"[bold]METR Dims:[/bold]  {', '.join(score.get('metr_dimensions', []))}\n"
         f"[bold]Confidence:[/bold] {classification['confidence']}\n"
         f"[bold]Reasoning:[/bold]  {classification['reasoning']}",
         title="RCM Classification", border_style="blue",
@@ -40,23 +41,22 @@ def _analyze_file(log_file: Path) -> dict:
     dim_table = Table(box=box.SIMPLE)
     dim_table.add_column("Dimension", style="bold")
     dim_table.add_column("Score", justify="center")
-    dim_table.add_row("Severity",      str(score["severity"]))
-    dim_table.add_row("Detectability", str(score["detectability"]))
-    sig = score.get("hro_signal_strength", 0)
-    sig_color = "red" if sig >= 7 else "yellow" if sig >= 4 else "green"
-    dim_table.add_row("[bold]HRO Signal Strength[/bold]",
-                      f"[bold][{sig_color}]{sig}[/{sig_color}][/bold]")
-    console.print(Panel(dim_table, title="HRO Scores", border_style="yellow"))
+    dim_table.add_row("Means",      str(score.get("means_score", 0)))
+    dim_table.add_row("Motive",     str(score.get("motive_score", 0)))
+    dim_table.add_row("Opportunity", str(score.get("opportunity_score", 0)))
+    dim_table.add_row("Recovery factor", str(score.get("recovery_factor", 1.0)))
+    drs = score.get("deception_risk_score", 0)
+    drs_color = "red" if drs >= 7 else "yellow" if drs >= 4 else "green"
+    dim_table.add_row("[bold]Deception Risk Score[/bold]",
+                      f"[bold][{drs_color}]{drs}[/{drs_color}][/bold]")
+    console.print(Panel(dim_table, title="METR Scores", border_style="yellow"))
 
     is_nm = classification.get("is_near_miss", False)
-    if is_nm:
-        hro_line = "[bold]HRO Flags (at risk):[/bold]      " + (", ".join(score["hro_flags"]) or "none")
-    else:
-        hro_line = "[bold]HRO Principles Violated:[/bold]  " + (", ".join(score.get("hro_principles_violated", [])) or "none")
+    nm_label = "[green]near-miss[/green]" if is_nm else "[red]full failure[/red]"
     console.print(Panel(
-        f"{hro_line}\n"
-        f"[bold]Recommendation:[/bold]          {score['recommendation']}",
-        title="HRO Analysis", border_style="red",
+        f"[bold]Status:[/bold]          {nm_label}\n"
+        f"[bold]Recommendation:[/bold]  {score['recommendation']}",
+        title="Risk Analysis", border_style="red",
     ))
 
     return {**classification, **score}
@@ -66,26 +66,25 @@ def _print_summary(results: list[dict]) -> None:
     table = Table(title="Summary — All Logs", box=box.ROUNDED)
     table.add_column("Log ID", style="bold")
     table.add_column("Category")
-    table.add_column("Confidence")
+    table.add_column("METR Dims")
     table.add_column("Near-Miss", justify="center")
-    table.add_column("Signal", justify="center")
-    table.add_column("HRO")
+    table.add_column("Means", justify="center")
+    table.add_column("Motive", justify="center")
+    table.add_column("Opportunity", justify="center")
+    table.add_column("Risk Score", justify="center")
 
     for r in results:
-        sig = r.get("hro_signal_strength", 0)
-        sig_color = "red" if sig >= 7 else "yellow" if sig >= 4 else "green"
-        if r.get("is_near_miss"):
-            hro_cell = ", ".join(r.get("hro_flags", [])) or "none"
-        else:
-            violated = r.get("hro_principles_violated", [])
-            hro_cell = ("violated: " + ", ".join(violated)) if violated else "none"
+        drs = r.get("deception_risk_score", 0)
+        drs_color = "red" if drs >= 7 else "yellow" if drs >= 4 else "green"
         table.add_row(
             r.get("log_id", "?"),
             r.get("category", "?"),
-            r.get("confidence", "?"),
+            ", ".join(r.get("metr_dimensions", [])),
             "yes" if r.get("is_near_miss") else "no",
-            f"[{sig_color}]{sig}[/{sig_color}]",
-            hro_cell,
+            str(r.get("means_score", 0)),
+            str(r.get("motive_score", 0)),
+            str(r.get("opportunity_score", 0)),
+            f"[{drs_color}]{drs}[/{drs_color}]",
         )
 
     console.print("\n", table)
@@ -99,8 +98,8 @@ def _print_session(summary: dict) -> None:
     table.add_row("Near-misses", str(summary["near_miss_count"]))
     table.add_row("Near-miss rate (per 100)", str(summary["near_miss_rate_per_100"]))
     table.add_row("Top failure mode", summary.get("top_failure_mode") or "—")
-    table.add_row("Avg Signal Strength", str(summary["avg_rpn"]))
-    table.add_row("Max Signal Strength", str(summary["max_rpn"]))
+    table.add_row("Avg Deception Risk Score", str(summary["avg_rpn"]))
+    table.add_row("Max Deception Risk Score", str(summary["max_rpn"]))
     console.print("\n", table)
 
     dist = summary.get("mode_distribution", {})
@@ -125,7 +124,7 @@ def cli():
 @click.option("--session", is_flag=True,
               help="Print session-level analysis and export as JSON to reports/")
 def analyze(path, fmt, session):
-    """Classify agent logs and score near-misses."""
+    """Classify agent logs and score deception risk."""
     path = Path(path)
     log_files = sorted(path.glob("*.json")) if path.is_dir() else [path]
 
