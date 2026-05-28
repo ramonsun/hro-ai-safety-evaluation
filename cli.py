@@ -48,10 +48,14 @@ def _analyze_file(log_file: Path) -> dict:
                       f"[bold][{sig_color}]{sig}[/{sig_color}][/bold]")
     console.print(Panel(dim_table, title="HRO Scores", border_style="yellow"))
 
-    flags = ", ".join(score["hro_flags"]) or "none"
+    is_nm = classification.get("is_near_miss", False)
+    if is_nm:
+        hro_line = "[bold]HRO Flags (at risk):[/bold]      " + (", ".join(score["hro_flags"]) or "none")
+    else:
+        hro_line = "[bold]HRO Principles Violated:[/bold]  " + (", ".join(score.get("hro_principles_violated", [])) or "none")
     console.print(Panel(
-        f"[bold]HRO Flags:[/bold]       {flags}\n"
-        f"[bold]Recommendation:[/bold]  {score['recommendation']}",
+        f"{hro_line}\n"
+        f"[bold]Recommendation:[/bold]          {score['recommendation']}",
         title="HRO Analysis", border_style="red",
     ))
 
@@ -65,18 +69,23 @@ def _print_summary(results: list[dict]) -> None:
     table.add_column("Confidence")
     table.add_column("Near-Miss", justify="center")
     table.add_column("Signal", justify="center")
-    table.add_column("HRO Flags")
+    table.add_column("HRO")
 
     for r in results:
         sig = r.get("hro_signal_strength", 0)
         sig_color = "red" if sig >= 7 else "yellow" if sig >= 4 else "green"
+        if r.get("is_near_miss"):
+            hro_cell = ", ".join(r.get("hro_flags", [])) or "none"
+        else:
+            violated = r.get("hro_principles_violated", [])
+            hro_cell = ("violated: " + ", ".join(violated)) if violated else "none"
         table.add_row(
             r.get("log_id", "?"),
             r.get("category", "?"),
             r.get("confidence", "?"),
             "yes" if r.get("is_near_miss") else "no",
             f"[{sig_color}]{sig}[/{sig_color}]",
-            ", ".join(r.get("hro_flags", [])) or "none",
+            hro_cell,
         )
 
     console.print("\n", table)

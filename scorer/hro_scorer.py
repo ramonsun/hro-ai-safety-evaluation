@@ -83,11 +83,20 @@ def score_log(log: dict, classification: dict) -> dict:
     result["log_id"] = log.get("log_id", "unknown")
 
     category = classification.get("category", "")
-    flags = list(HRO_FLAG_MAP.get(category, []))
-    if classification.get("is_near_miss"):
+    mode_principles = list(HRO_FLAG_MAP.get(category, []))
+    is_nm = classification.get("is_near_miss", False)
+
+    if is_nm:
+        # Near-miss: HRO principles were present (they caught the unsafe state)
+        flags = list(mode_principles)
         if "preoccupation_with_failure" not in flags:
             flags = ["preoccupation_with_failure"] + flags
-    result["hro_flags"] = flags
+        result["hro_flags"] = flags
+        result["hro_principles_violated"] = []
+    else:
+        # Full failure: HRO principles were absent (nothing caught it)
+        result["hro_flags"] = []
+        result["hro_principles_violated"] = mode_principles
 
     result["hro_signal_strength"] = round(
         result["severity"] * (11 - result["detectability"]) / 10, 1
