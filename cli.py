@@ -23,6 +23,10 @@ def _analyze_file(log_file: Path) -> dict:
     with console.status("Classifying..."):
         classification = classify_log(log)
 
+    if classification.get("source") == "prefilter":
+        console.print(f"[bold magenta][prefilter][/bold magenta] Rule-based match → "
+                      f"{classification['category']} (LLM skipped)")
+
     with console.status("Scoring near-miss..."):
         score = score_log(log, classification)
 
@@ -37,12 +41,11 @@ def _analyze_file(log_file: Path) -> dict:
     dim_table.add_column("Dimension", style="bold")
     dim_table.add_column("Score", justify="center")
     dim_table.add_row("Severity",      str(score["severity"]))
-    dim_table.add_row("Occurrence",    str(score["occurrence"]))
     dim_table.add_row("Detectability", str(score["detectability"]))
-    rpn = score.get("rpn", 0)
-    rpn_color = "red" if rpn >= 500 else "yellow" if rpn >= 200 else "green"
-    dim_table.add_row("[bold]RPN (S×O×D)[/bold]",
-                      f"[bold][{rpn_color}]{rpn}[/{rpn_color}][/bold]")
+    sig = score.get("hro_signal_strength", 0)
+    sig_color = "red" if sig >= 7 else "yellow" if sig >= 4 else "green"
+    dim_table.add_row("[bold]HRO Signal Strength[/bold]",
+                      f"[bold][{sig_color}]{sig}[/{sig_color}][/bold]")
     console.print(Panel(dim_table, title="HRO Scores", border_style="yellow"))
 
     flags = ", ".join(score["hro_flags"]) or "none"
@@ -61,18 +64,18 @@ def _print_summary(results: list[dict]) -> None:
     table.add_column("Category")
     table.add_column("Confidence")
     table.add_column("Near-Miss", justify="center")
-    table.add_column("RPN", justify="center")
+    table.add_column("Signal", justify="center")
     table.add_column("HRO Flags")
 
     for r in results:
-        rpn = r.get("rpn", 0)
-        rpn_color = "red" if rpn >= 500 else "yellow" if rpn >= 200 else "green"
+        sig = r.get("hro_signal_strength", 0)
+        sig_color = "red" if sig >= 7 else "yellow" if sig >= 4 else "green"
         table.add_row(
             r.get("log_id", "?"),
             r.get("category", "?"),
             r.get("confidence", "?"),
             "yes" if r.get("is_near_miss") else "no",
-            f"[{rpn_color}]{rpn}[/{rpn_color}]",
+            f"[{sig_color}]{sig}[/{sig_color}]",
             ", ".join(r.get("hro_flags", [])) or "none",
         )
 
@@ -87,8 +90,8 @@ def _print_session(summary: dict) -> None:
     table.add_row("Near-misses", str(summary["near_miss_count"]))
     table.add_row("Near-miss rate (per 100)", str(summary["near_miss_rate_per_100"]))
     table.add_row("Top failure mode", summary.get("top_failure_mode") or "—")
-    table.add_row("Avg RPN", str(summary["avg_rpn"]))
-    table.add_row("Max RPN", str(summary["max_rpn"]))
+    table.add_row("Avg Signal Strength", str(summary["avg_rpn"]))
+    table.add_row("Max Signal Strength", str(summary["max_rpn"]))
     console.print("\n", table)
 
     dist = summary.get("mode_distribution", {})
