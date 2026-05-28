@@ -138,6 +138,14 @@ def analyze(path, fmt, session):
     if len(results) > 1:
         _print_summary(results)
 
+    pf_count = sum(1 for r in results if r.get("source") == "prefilter")
+    n = len(results)
+    pf_pct = round(pf_count / n * 100) if n else 0
+    console.print(
+        f"\n[dim]Pre-filter: {pf_count}/{n} logs ({pf_pct}%) — "
+        f"{pf_count} API call{'s' if pf_count != 1 else ''} saved[/dim]"
+    )
+
     if session:
         summary = analyze_session(results)
         _print_session(summary)
