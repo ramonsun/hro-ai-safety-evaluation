@@ -2,6 +2,7 @@ import os
 import json
 import anthropic
 from taxonomy.rcm_taxonomy import TAXONOMY
+from classifier.pre_filter import pre_filter
 
 
 def _build_prompt(log: dict) -> str:
@@ -46,6 +47,11 @@ def _call_api(client: anthropic.Anthropic, prompt: str) -> str:
 
 
 def classify_log(log: dict) -> dict:
+    fast = pre_filter(log)
+    if fast is not None:
+        print(f"[classify] pre-filter hit: {fast['category']} ({fast['reasoning']})")
+        return fast
+
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     prompt = _build_prompt(log)
 
