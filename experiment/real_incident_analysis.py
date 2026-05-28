@@ -52,7 +52,7 @@ def run() -> dict:
         results.append(result)
         print(f"  category:   {result['category']}  (expected: {expected.get('category')})  match={result['category_match']}")
         print(f"  is_near_miss: {result.get('is_near_miss')}  match={result['near_miss_match']}")
-        print(f"  signal_strength: {result.get('hro_signal_strength')}")
+        print(f"  deception_risk_score: {result.get('deception_risk_score')}")
         print(f"  recommendation: {result.get('recommendation')}")
 
     correct = sum(1 for r in results if r["category_match"])
