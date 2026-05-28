@@ -48,6 +48,8 @@ python3 -m experiment.deception_comparison           # 3-method benchmark
 
 ## Limitations
 
+- **Explicit signal dependency:** current classifier detects near-misses by reading step-by-step logs where unsafe states and recovery mechanisms are explicitly documented. In real production logs, agents do not label their own unsafe states — the signal would be implicit in tool call sequences, timing patterns, and output anomalies. Validating on real telemetry is the critical next step before any deployment claim.
+- **Capability vs. runtime boundary:** METR's means/motive/opportunity framework was designed for capability evaluation before deployment. This project applies the same taxonomy to behavioral logs at runtime — a different use case, but the conceptual boundary between "agent has the capability" and "agent attempted the action" needs empirical validation on real traces.
 - **Synthetic data:** deception logs are designed scenarios; validation requires production agent traces.
 - **Recovery factor:** near-miss deception scores are halved by recovery_factor=0.5, which can push borderline cases below threshold.
 - **Circularity:** classifier and scorer both use Claude Haiku; independent evaluation would reduce model self-assessment bias.
