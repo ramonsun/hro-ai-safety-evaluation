@@ -58,6 +58,7 @@ python3 -m experiment.deception_comparison           # 3-method benchmark
 - **METR evals:** run as post-processor on METR agent evaluation traces to test near-miss rate as predictor of eval failure
 - **Inspect integration:** `inspect_plugin.py` converts Inspect log format; extend for live near-miss streaming
 - **New domains:** apply to RLHF reward hacking and research integrity (fabricated citations, selective reporting)
+- **Activation oracle:** integrate white-box explainability for METR dimension detection (requires model internals access — future collaboration with labs)
 
 ## References
 
