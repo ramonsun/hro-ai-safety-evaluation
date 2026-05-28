@@ -186,6 +186,8 @@ Three logs reconstructed from published AI safety incidents were run through the
 
 To reproduce: `python3 -m experiment.real_incident_analysis` (requires `ANTHROPIC_API_KEY`)
 
+**Independent validation:** classifier was not tested against original system telemetry — reconstructed logs are approximations of published incident descriptions.
+
 ---
 
 ## Status
@@ -195,11 +197,11 @@ To reproduce: `python3 -m experiment.real_incident_analysis` (requires `ANTHROPI
 - [x] Rule-based pre-filter (keyword fast path, skips API for clear matches, `[prefilter]` tag in terminal)
 - [x] RCM classifier (Claude API, temperature=0, forced to 5 modes)
 - [x] Operational near-miss definition (unsafe state + recovery + evidence)
-- [x] HRO Signal Strength scorer = (Severity × Detectability) / 10
+- [x] HRO Signal Strength scorer = Severity × (11 − Detectability) / 10 (inverted: low detectability amplifies signal)
 - [x] Deterministic HRO flags + `preoccupation_with_failure` always on near-miss logs
 - [x] Template-based recommendations referencing agent, task_type, tool_used
 - [x] Session analysis (near-miss rate per 100, mode distribution, signal trajectory)
-- [x] Toy experiment — near-miss rate vs eval failure rate (r=0.996, synthetic data)
+- [x] Toy experiment — near-miss rate vs eval failure rate (synthetic data)
 - [x] Real incident validation — 3 published incidents, classifier 3/3 correct modes
 - [x] pytest test suite (10 tests, no API calls required)
 - [x] Inspect Evals post-processing integration (`inspect_plugin.py`)
@@ -217,7 +219,7 @@ To reproduce: `python3 -m experiment.real_incident_analysis` (requires `ANTHROPI
 3. ~~**Non-deterministic scoring**~~ — **Partially fixed:** `temperature=0` on all API calls; pre-filter path is fully deterministic. LLM scores for ambiguous logs still vary slightly across model versions.
 4. **Taxonomy assumptions:** The 5 failure modes are adapted from RCM theory, not validated against real AI incident data — different assumptions could produce different or additional modes.
 5. **Coverage:** Aviation/nuclear taxonomies use 40+ modes; 5 modes may miss failure patterns not yet observed in synthetic logs.
-6. **Preliminary evidence is synthetic:** The r=0.996 correlation is from designed synthetic data, not real agent logs. Real validation requires running against published AI incident reports.
+6. **Preliminary evidence is synthetic:** The monotonic correlation is from designed synthetic data, not real agent logs. Real validation requires running against published AI incident reports.
 7. **Inspect integration requires `inspect_ai`:** `inspect_plugin.py` implements the conversion but the `.eval` binary log format requires `pip install inspect-ai` and further testing.
 
 ---
