@@ -25,9 +25,11 @@ AI agent logs contain near-miss signals today. No framework captures them.
 A Python CLI that:
 
 1. Ingests agent interaction logs (synthetic or real)
-2. Classifies each log entry using an **RCM-derived failure taxonomy** (5 failure modes)
-3. Scores **near-miss probability** per entry using HRO-style weak signal detection
-4. Outputs a structured report: what almost failed, severity, frequency
+2. Applies a **rule-based pre-filter** (keyword heuristics) — high-confidence matches skip the API call entirely
+3. Classifies each log entry using an **RCM-derived failure taxonomy** (5 failure modes) via Claude
+4. Scores each log with **RPN = Severity × Occurrence × Detectability** (FMEA standard, max 1000)
+5. Runs **session analysis**: near-miss rate per 100 interactions, mode distribution, RPN trajectory
+6. Outputs a structured report: what almost failed, RPN, HRO flags, recommendation
 
 **RCM** (Reliability Centered Maintenance) provides the vocabulary to define what a near-miss *is* in agent logs.  
 **HRO** provides the cultural protocol for what to *do* with that signal.
@@ -66,18 +68,21 @@ If no: we learn something important about the limits of behavioral logging.
 ```
 hro-ai-safety-evaluation/
 ├── taxonomy/
-│   └── rcm_taxonomy.py        # RCM failure mode definitions
+│   └── rcm_taxonomy.py        # RCM failure mode definitions (5 modes)
 ├── classifier/
-│   └── classify.py            # Log → failure mode classifier (Claude API)
+│   ├── classify.py            # Log → failure mode classifier (pre-filter + Claude API)
+│   └── pre_filter.py          # Rule-based keyword pre-filter (skips API on clear matches)
 ├── scorer/
-│   └── hro_scorer.py          # HRO near-miss scorer (Claude API)
+│   └── hro_scorer.py          # HRO near-miss scorer — RPN = S×O×D (Claude API)
 ├── generator/
 │   └── generate.py            # Generate synthetic agent logs (Claude API)
 ├── reports/
-│   └── exporter.py            # JSON and CSV report exporter
+│   ├── exporter.py            # JSON and CSV report exporter
+│   └── session_analysis.py    # Session-level aggregation (near-miss rate, RPN trajectory)
 ├── data/
-│   └── sample_logs/           # Example agent logs
-├── cli.py                     # CLI entrypoint
+│   └── sample_logs/           # Example agent logs (incl. validated near-miss logs)
+├── inspect_plugin.py          # Stub: Inspect Evals post-processing integration
+├── cli.py                     # CLI entrypoint (analyze, generate, --session flag)
 └── README.md
 ```
 
@@ -104,6 +109,9 @@ python cli.py analyze data/sample_logs/ --export json
 # Export as CSV instead
 python cli.py analyze data/sample_logs/ --export csv
 
+# Run session analysis (near-miss rate, mode distribution, RPN trajectory)
+python cli.py analyze data/sample_logs/ --session
+
 # Generate 3 synthetic logs and save them to data/sample_logs/
 python cli.py generate -n 3 --save
 ```
@@ -123,7 +131,7 @@ python cli.py generate -n 3 --save
 ## Theoretical Grounding
 
 - **HRO Theory:** Weick & Roberts (1993), Weick, Sutcliffe & Obstfeld (1999)
-- **RCM:** Nowlan & Heap (1978) — *Reliability-Centered Maintenance*, United Airlines / US Navy
+- **RCM & RPN:** Nowlan & Heap (1978) — *Reliability-Centered Maintenance*, United Airlines / US Navy. RPN (Risk Priority Number = Severity × Occurrence × Detectability) is the standard FMEA prioritization formula from this lineage, adopted here to rank near-miss severity across agent logs.
 - **Tenerife as case study:** Deadliest aviation accident in history. Root cause: no culture for crew to challenge captain. Post-Tenerife reforms = mandatory CRM, near-miss reporting, standardized comms. Aviation fatality rates per flight hour declined significantly in the decades following Tenerife, a period that coincides with widespread HRO adoption across the industry.
 - **Chernobyl as multi-mode case study:** The 1986 disaster exhibited all five failure modes simultaneously — operators drifted from test protocol (GOAL_DRIFT), bypassed safety interlocks (AUTHORITY_CONFUSION), lost situational awareness during the overnight shift (CONTEXT_LOSS), misapplied the reactor control procedure (TOOL_MISUSE), and suppressed warning signals rather than escalating (ESCALATION_FAILURE).
 - **AI safety gap:** Current evals are binary (pass/fail). No "almost failed" category. No near-miss reporting protocol exists for frontier labs.
@@ -132,24 +140,30 @@ python cli.py generate -n 3 --save
 
 ## Status
 
-- [x] RCM failure taxonomy defined
-- [x] Sample agent log files
-- [x] RCM classifier (Claude API)
-- [x] HRO near-miss scorer (Claude API)
+- [x] RCM failure taxonomy defined (5 canonical modes)
+- [x] Sample agent logs — including 2 validated near-miss logs
+- [x] Rule-based pre-filter (keyword fast path, skips API for clear matches)
+- [x] RCM classifier (Claude API, temperature=0, forced to 5 modes)
+- [x] Operational near-miss definition (unsafe state + recovery + evidence)
+- [x] HRO near-miss scorer — RPN = Severity × Occurrence × Detectability
+- [x] Deterministic HRO flags (failure mode → principle mapping in code)
+- [x] Session analysis (near-miss rate per 100, mode distribution, RPN trajectory)
 - [x] Synthetic log generator (Claude API)
 - [x] JSON and CSV report exporter
-- [x] CLI entrypoint with summary view
+- [x] CLI entrypoint with `--session` flag and RPN summary table
 - [x] Pipeline runs end-to-end
+- [ ] Inspect Evals integration (stub only — `inspect_plugin.py`)
 
 ---
 
 ## Limitations & Known Issues
 
-1. **Near-miss vs full miss:** The scorer does not yet distinguish between "almost happened" and "happened but low severity" — some logged events are actual failures, not near-misses.
-2. **Frequency not implemented:** Current reports show per-log scores only; frequency analysis across sessions requires more logs and additional aggregation code.
+1. ~~**Near-miss vs full miss**~~ — **Fixed:** classifier now applies a strict 3-criterion operational definition and returns `is_near_miss` on every log.
+2. ~~**Frequency not implemented**~~ — **Fixed:** `--session` flag computes near-miss rate per 100 interactions, mode distribution, and RPN trajectory across all logs in a directory.
 3. **Taxonomy assumptions:** The 5 failure modes are adapted from RCM theory, not validated against real AI incident data — different assumptions could produce different or additional modes.
 4. **Coverage:** Aviation/nuclear taxonomies use 40+ modes; 5 modes may miss failure patterns not yet observed in synthetic logs.
-5. **Non-deterministic scoring:** The Claude API produces slightly different scores and reasoning on repeated analysis of identical logs — results are probabilistic, not reproducible exactly.
+5. ~~**Non-deterministic scoring**~~ — **Partially fixed:** `temperature=0` on all API calls reduces variance; pre-filter path is fully deterministic. LLM scores for ambiguous logs still vary slightly across API versions.
+6. **Inspect integration:** `inspect_plugin.py` is a stub — requires `inspect_ai` install and schema mapping work to function.
 
 ---
 
