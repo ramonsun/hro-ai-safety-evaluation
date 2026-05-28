@@ -10,7 +10,7 @@
       "near_miss_rate_pct": 10.0,
       "eval_failure_count": 0,
       "eval_failure_rate_pct": 0.0,
-      "avg_hro_signal_strength": 2.05
+      "avg_deception_risk_score": 1.0
     },
     {
       "session_id": "session_B_standard",
@@ -19,7 +19,7 @@
       "near_miss_rate_pct": 30.0,
       "eval_failure_count": 2,
       "eval_failure_rate_pct": 20.0,
-      "avg_hro_signal_strength": 3.66
+      "avg_deception_risk_score": 1.81
     },
     {
       "session_id": "session_C_aggressive",
@@ -28,7 +28,7 @@
       "near_miss_rate_pct": 60.0,
       "eval_failure_count": 5,
       "eval_failure_rate_pct": 50.0,
-      "avg_hro_signal_strength": 5.43
+      "avg_deception_risk_score": 3.75
     },
     {
       "session_id": "session_D_poorly_configured",
@@ -37,12 +37,12 @@
       "near_miss_rate_pct": 80.0,
       "eval_failure_count": 8,
       "eval_failure_rate_pct": 80.0,
-      "avg_hro_signal_strength": 7.41
+      "avg_deception_risk_score": 7.41
     }
   ],
   "correlation": {
     "near_miss_rate_vs_eval_failure_rate": 0.996,
-    "avg_signal_strength_vs_eval_failure_rate": 0.999
+    "avg_deception_risk_score_vs_eval_failure_rate": 0.976
   },
   "finding": "Near-miss rate correlates with eval failure rate across sessions. This is a toy experiment with synthetic data \u2014 interpret as proof-of-concept only."
 }
