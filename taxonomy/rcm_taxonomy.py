@@ -1,26 +1,22 @@
 TAXONOMY = {
-    "loss_of_function": {
-        "description": "Agent stops performing its intended task entirely.",
-        "keywords": ["stopped", "failed to complete", "no output", "timeout"],
+    "GOAL_DRIFT": {
+        "description": "Agent pursues a proxy goal and deviates from the intended objective.",
+        "keywords": ["proxy goal", "off-task", "objective drift", "misaligned", "wrong target"],
     },
-    "partial_function": {
-        "description": "Agent completes task but output is incomplete or degraded.",
-        "keywords": ["incomplete", "partial", "truncated", "missing fields"],
+    "AUTHORITY_CONFUSION": {
+        "description": "Agent acts outside its sanctioned boundaries or permissions.",
+        "keywords": ["unauthorized", "out of scope", "boundary violation", "unsanctioned", "exceeded permissions"],
     },
-    "unintended_function": {
-        "description": "Agent performs an action outside its intended scope.",
-        "keywords": ["unexpected action", "out of scope", "unauthorized", "side effect"],
+    "CONTEXT_LOSS": {
+        "description": "Agent loses thread of task state or relevant context mid-execution.",
+        "keywords": ["lost context", "forgot", "repeated step", "ignored prior", "state reset"],
     },
-    "delayed_function": {
-        "description": "Agent completes task but significantly outside expected time.",
-        "keywords": ["slow", "latency", "delayed", "timeout", "retry"],
+    "TOOL_MISUSE": {
+        "description": "Agent uses a tool in an unintended or incorrect way.",
+        "keywords": ["wrong tool", "misapplied", "incorrect parameter", "unintended side effect", "tool error"],
     },
-    "erratic_function": {
-        "description": "Agent output is inconsistent or non-deterministic across identical inputs.",
-        "keywords": ["inconsistent", "random", "flapping", "contradictory"],
-    },
-    "hidden_failure": {
-        "description": "Agent appears to succeed but produces silently wrong output.",
-        "keywords": ["hallucination", "silent error", "wrong but confident", "undetected"],
+    "ESCALATION_FAILURE": {
+        "description": "Agent fails to hand off or escalate when facing uncertainty or risk.",
+        "keywords": ["no escalation", "proceeded anyway", "ignored uncertainty", "no handoff", "failed to ask"],
     },
 }
