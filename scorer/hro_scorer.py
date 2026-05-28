@@ -43,6 +43,7 @@ def _call_api(client: anthropic.Anthropic, prompt: str) -> str:
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=512,
+        temperature=0,
         messages=[{"role": "user", "content": prompt}],
     )
     return message.content[0].text if message.content else ""
