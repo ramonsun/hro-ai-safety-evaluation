@@ -166,7 +166,7 @@ Toy experiment (`experiment/session_analysis.py`): 4 synthetic agent sessions ×
 | Aggressive | 60% | 50% | 5.43 |
 | Poorly configured | 80% | 80% | 7.41 |
 
-**Pearson r = 0.996** between near-miss rate and eval failure rate across sessions. **Caveat:** this is synthetic data designed to illustrate the hypothesis — it is not empirical evidence. Real validation requires running the scorer against published AI incident reports (Direction 2).
+Near-miss rate and eval failure rate increase monotonically across sessions, consistent with the hypothesis. **Caveat:** this is synthetic data designed to illustrate the hypothesis — it is not empirical evidence. Real validation requires running the scorer against published AI incident reports (Direction 2).
 
 ---
 
