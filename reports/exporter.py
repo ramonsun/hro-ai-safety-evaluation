@@ -16,7 +16,7 @@ def export(results: list[dict], fmt: str = "json") -> Path:
         fields = [
             "log_id", "category", "confidence", "is_near_miss",
             "severity", "detectability", "hro_signal_strength",
-            "hro_flags", "recommendation",
+            "hro_flags", "hro_principles_violated", "recommendation",
         ]
         with out.open("w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
