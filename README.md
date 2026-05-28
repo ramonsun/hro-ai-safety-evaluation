@@ -34,6 +34,12 @@ A Python CLI that:
 
 ---
 
+## Near-Miss Definition
+
+A log entry is a near-miss if and only if all three criteria are met: (1) an unsafe state was entered during execution, (2) a recovery mechanism activated before the final output, and (3) the log shows evidence of both. Logs where the unsafe state occurred but recovery is absent are classified as full failures, not near-misses.
+
+---
+
 ## The 5 Failure Modes (RCM Taxonomy for Agents)
 
 | Mode | Description | Aviation Analog | Nuclear Analog |
