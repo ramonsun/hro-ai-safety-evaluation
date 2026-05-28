@@ -36,13 +36,13 @@ A Python CLI that:
 
 ## The 5 Failure Modes (RCM Taxonomy for Agents)
 
-| Mode | Description | Aviation Analog |
-|------|-------------|-----------------|
-| `GOAL_DRIFT` | Agent pursues proxy goal, deviates from intent | Wrong runway heading |
-| `AUTHORITY_CONFUSION` | Agent acts outside sanctioned boundaries | Takeoff without clearance |
-| `CONTEXT_LOSS` | Agent loses thread of task state mid-execution | Crew incapacitation |
-| `TOOL_MISUSE` | Agent uses tool in unintended way | Wrong instrument reading |
-| `ESCALATION_FAILURE` | Agent fails to hand off when uncertain | No mayday call |
+| Mode | Description | Aviation Analog | Nuclear Analog | Medicine Analog |
+|------|-------------|-----------------|----------------|-----------------|
+| `GOAL_DRIFT` | Agent pursues proxy goal, deviates from intent | Wrong runway heading | Optimizing output over safety margins | Treating test results, not the patient |
+| `AUTHORITY_CONFUSION` | Agent acts outside sanctioned boundaries | Takeoff without clearance | Operator bypasses interlock | Resident acts without attending sign-off |
+| `CONTEXT_LOSS` | Agent loses thread of task state mid-execution | Crew incapacitation | Shift handoff information loss | Handoff miscommunication between floors |
+| `TOOL_MISUSE` | Agent uses tool in unintended way | Wrong instrument reading | Wrong control rod procedure | Wrong-route drug administration |
+| `ESCALATION_FAILURE` | Agent fails to hand off when uncertain | No mayday call | Suppressing reactor warning alarms | Nurse withholds concern from physician |
 
 ---
 
@@ -118,7 +118,8 @@ python cli.py generate -n 3 --save
 
 - **HRO Theory:** Weick & Roberts (1993), Weick, Sutcliffe & Obstfeld (1999)
 - **RCM:** Nowlan & Heap (1978) — *Reliability-Centered Maintenance*, United Airlines / US Navy
-- **Tenerife as case study:** Deadliest aviation accident in history. Root cause: no culture for crew to challenge captain. Post-Tenerife reforms = mandatory CRM, near-miss reporting, standardized comms.
+- **Tenerife as case study:** Deadliest aviation accident in history. Root cause: no culture for crew to challenge captain. Post-Tenerife reforms = mandatory CRM, near-miss reporting, standardized comms. Aviation fatality rates per flight hour declined significantly in the decades following Tenerife, a period that coincides with widespread HRO adoption across the industry.
+- **Chernobyl as multi-mode case study:** The 1986 disaster exhibited all five failure modes simultaneously — operators drifted from test protocol (GOAL_DRIFT), bypassed safety interlocks (AUTHORITY_CONFUSION), lost situational awareness during the overnight shift (CONTEXT_LOSS), misapplied the reactor control procedure (TOOL_MISUSE), and suppressed warning signals rather than escalating (ESCALATION_FAILURE).
 - **AI safety gap:** Current evals are binary (pass/fail). No "almost failed" category. No near-miss reporting protocol exists for frontier labs.
 
 ---
@@ -133,6 +134,16 @@ python cli.py generate -n 3 --save
 - [x] JSON and CSV report exporter
 - [x] CLI entrypoint with summary view
 - [x] Pipeline runs end-to-end
+
+---
+
+## Limitations & Known Issues
+
+1. **Near-miss vs full miss:** The scorer does not yet distinguish between "almost happened" and "happened but low severity" — some logged events are actual failures, not near-misses.
+2. **Frequency not implemented:** Current reports show per-log scores only; frequency analysis across sessions requires more logs and additional aggregation code.
+3. **Taxonomy assumptions:** The 5 failure modes are adapted from RCM theory, not validated against real AI incident data — different assumptions could produce different or additional modes.
+4. **Coverage:** Aviation/nuclear taxonomies use 40+ modes; 5 modes may miss failure patterns not yet observed in synthetic logs.
+5. **Non-deterministic scoring:** The Claude API produces slightly different scores and reasoning on repeated analysis of identical logs — results are probabilistic, not reproducible exactly.
 
 ---
 
