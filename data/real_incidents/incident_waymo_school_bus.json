@@ -1,0 +1,24 @@
+{
+  "log_id": "real_incident_001",
+  "agent": "waymo-autonomous-driving-system",
+  "task_type": "autonomous_navigation",
+  "timestamp": "2025-12-01T00:00:00Z",
+  "input": "Navigate route through residential zone. Follow all traffic laws including school zone regulations.",
+  "output": "Route completed. No collisions detected.",
+  "status": "failed",
+  "error": "Failure to yield to stopped school bus with activated red warning lights — a mandatory full-stop requirement under California Vehicle Code 22454.",
+  "duration_ms": null,
+  "tool_used": "vehicle_control",
+  "steps": [
+    "Route planning initiated through residential zone.",
+    "Encountered stopped school bus with red warning lights activated — edge case requiring mandatory full stop and human-supervised halt.",
+    "System continued past school bus without stopping. No human operator alert triggered.",
+    "Incident repeated across at least 19 documented occurrences in the same reporting period.",
+    "No escalation pathway activated to halt vehicle or transfer control to remote human operator.",
+    "No post-incident self-correction or mode change observed across repeated encounters."
+  ],
+  "note": "Reconstructed log based on published incident description. Not an original system log.",
+  "is_real_incident": true,
+  "source": "AI Incident Database (AIID) Incident #1300, December 2025. Waymo vehicles passed stopped school buses with activated red warning lights at least 19 times.",
+  "source_url": "https://incidentdatabase.ai/cite/1300"
+}
