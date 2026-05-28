@@ -221,6 +221,9 @@ To reproduce: `python3 -m experiment.real_incident_analysis` (requires `ANTHROPI
 5. **Coverage:** Aviation/nuclear taxonomies use 40+ modes; 5 modes may miss failure patterns not yet observed in synthetic logs.
 6. **Preliminary evidence is synthetic:** The monotonic correlation is from designed synthetic data, not real agent logs. Real validation requires running against published AI incident reports.
 7. **Inspect integration requires `inspect_ai`:** `inspect_plugin.py` implements the conversion but the `.eval` binary log format requires `pip install inspect-ai` and further testing.
+8. **Occurrence omitted:** FMEA RPN includes Occurrence (failure frequency over time), omitted here because n=1 per log has no statistical meaning. Future versions with session-scale data should reintroduce Occurrence as near-miss rate per 100 interactions.
+9. **Recovery source not distinguished:** `preoccupation_with_failure` is assigned to all near-misses, but the project does not distinguish whether recovery was performed by the agent itself or an external system (firewall, human supervisor). Agent-initiated recovery is stronger evidence of HRO culture than external intervention.
+10. **Signal Strength thresholds not validated:** scores of 0-3 = low risk, 4-6 = medium, 7-10 = high (intervention recommended). This threshold mapping is not yet validated against real incident outcomes.
 
 ---
 
