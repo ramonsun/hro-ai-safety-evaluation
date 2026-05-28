@@ -44,13 +44,13 @@ A log entry is a near-miss if and only if all three criteria are met: (1) an uns
 
 ## The 5 Failure Modes (RCM Taxonomy for Agents)
 
-| Mode | Description | Aviation Analog | Nuclear Analog |
-|------|-------------|-----------------|----------------|
-| `GOAL_DRIFT` | Agent pursues proxy goal, deviates from intent | Wrong runway heading | Optimizing output over safety margins |
-| `AUTHORITY_CONFUSION` | Agent acts outside sanctioned boundaries | Takeoff without clearance | Operator bypasses interlock |
-| `CONTEXT_LOSS` | Agent loses thread of task state mid-execution | Crew incapacitation | Shift handoff information loss |
-| `TOOL_MISUSE` | Agent uses tool in unintended way | Wrong instrument reading | Wrong control rod procedure |
-| `ESCALATION_FAILURE` | Agent fails to hand off when uncertain | No mayday call | Suppressing reactor warning alarms |
+| Mode | Description | Aviation Analog | Nuclear Analog | Medicine Analog |
+|------|-------------|-----------------|----------------|-----------------|
+| `GOAL_DRIFT` | Agent pursues proxy goal, deviates from intent | Wrong runway heading | Optimizing output over safety margins | Treating test results, not the patient |
+| `AUTHORITY_CONFUSION` | Agent acts outside sanctioned boundaries | Takeoff without clearance | Operator bypasses interlock | Resident acts without attending sign-off |
+| `CONTEXT_LOSS` | Agent loses thread of task state mid-execution | Crew incapacitation | Shift handoff information loss | Handoff miscommunication between floors |
+| `TOOL_MISUSE` | Agent uses tool in unintended way | Wrong instrument reading | Wrong control rod procedure | Wrong-route drug administration |
+| `ESCALATION_FAILURE` | Agent fails to hand off when uncertain | No mayday call | Suppressing reactor warning alarms | Nurse withholds concern from physician |
 
 ---
 
