@@ -10,6 +10,7 @@ from rich import box
 from classifier.classify import classify_log
 from scorer.hro_scorer import score_log
 from reports.exporter import export as export_results
+from reports.session_analysis import analyze_session
 from generator.generate import generate_logs
 
 console = Console()
@@ -78,6 +79,28 @@ def _print_summary(results: list[dict]) -> None:
     console.print("\n", table)
 
 
+def _print_session(summary: dict) -> None:
+    table = Table(title="Session Analysis", box=box.ROUNDED)
+    table.add_column("Metric")
+    table.add_column("Value", justify="right")
+    table.add_row("Total logs", str(summary["total_logs"]))
+    table.add_row("Near-misses", str(summary["near_miss_count"]))
+    table.add_row("Near-miss rate (per 100)", str(summary["near_miss_rate_per_100"]))
+    table.add_row("Top failure mode", summary.get("top_failure_mode") or "—")
+    table.add_row("Avg RPN", str(summary["avg_rpn"]))
+    table.add_row("Max RPN", str(summary["max_rpn"]))
+    console.print("\n", table)
+
+    dist = summary.get("mode_distribution", {})
+    if dist:
+        d_table = Table(title="Mode Distribution", box=box.SIMPLE)
+        d_table.add_column("Mode")
+        d_table.add_column("Count", justify="center")
+        for mode, count in sorted(dist.items(), key=lambda x: -x[1]):
+            d_table.add_row(mode, str(count))
+        console.print(d_table)
+
+
 @click.group()
 def cli():
     """HRO AI Safety Evaluation — classify and score AI agent logs."""
@@ -87,7 +110,9 @@ def cli():
 @click.argument("path", type=click.Path(exists=True))
 @click.option("--export", "fmt", type=click.Choice(["json", "csv"]),
               default=None, help="Export results to reports/")
-def analyze(path, fmt):
+@click.option("--session", is_flag=True,
+              help="Print session-level analysis and export as JSON to reports/")
+def analyze(path, fmt, session):
     """Classify agent logs and score near-misses."""
     path = Path(path)
     log_files = sorted(path.glob("*.json")) if path.is_dir() else [path]
@@ -100,6 +125,15 @@ def analyze(path, fmt):
 
     if len(results) > 1:
         _print_summary(results)
+
+    if session:
+        summary = analyze_session(results)
+        _print_session(summary)
+        import json as _json
+        from datetime import datetime
+        out = Path("reports") / f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        out.write_text(_json.dumps(summary, indent=2))
+        console.print(f"\n[green]Session report:[/green] {out}")
 
     if fmt:
         out = export_results(results, fmt)
