@@ -28,6 +28,7 @@ def pre_filter(log: dict) -> dict | None:
             "is_near_miss": False,
             "near_miss_reasoning": "Pre-filter path; near-miss detection requires LLM analysis.",
             "log_id": log.get("log_id", "unknown"),
+            "source": "prefilter",
         }
 
     return None
