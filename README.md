@@ -73,7 +73,7 @@ hro-ai-safety-evaluation/
 │   ├── classify.py            # Log → failure mode classifier (pre-filter + Claude API)
 │   └── pre_filter.py          # Rule-based keyword pre-filter (skips API on clear matches)
 ├── scorer/
-│   └── hro_scorer.py          # HRO near-miss scorer: Signal Strength = S×(11-D)/10
+│   └── hro_scorer.py          # HRO near-miss scorer: Signal Strength = S×(11−D)/10
 ├── generator/
 │   └── generate.py            # Generate synthetic agent logs (Claude API)
 ├── reports/
