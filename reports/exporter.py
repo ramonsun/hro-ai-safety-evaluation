@@ -14,15 +14,15 @@ def export(results: list[dict], fmt: str = "json") -> Path:
     else:
         out = REPORTS_DIR / f"report_{timestamp}.csv"
         fields = [
-            "log_id", "category", "confidence", "is_near_miss",
-            "severity", "detectability", "hro_signal_strength",
-            "hro_flags", "hro_principles_violated", "recommendation",
+            "log_id", "category", "metr_dimensions", "confidence", "is_near_miss",
+            "means_score", "motive_score", "opportunity_score",
+            "recovery_factor", "deception_risk_score", "recommendation",
         ]
         with out.open("w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
             writer.writeheader()
             for r in results:
                 row = dict(r)
-                row["hro_flags"] = "|".join(r.get("hro_flags", []))
+                row["metr_dimensions"] = "|".join(r.get("metr_dimensions", []))
                 writer.writerow(row)
     return out
