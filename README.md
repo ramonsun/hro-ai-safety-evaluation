@@ -27,7 +27,7 @@ A Python CLI that:
 1. Ingests agent interaction logs (synthetic or real)
 2. Applies a **rule-based pre-filter** (keyword heuristics) — high-confidence matches skip the API call entirely
 3. Classifies each log entry using an **RCM-derived failure taxonomy** (5 failure modes) via Claude
-4. Scores each log with **HRO Signal Strength = (Severity × Detectability) / 10** (scale 0–10)
+4. Scores each log with **HRO Signal Strength = Severity × (11 − Detectability) / 10** (scale 0–10; low detectability amplifies severity)
 5. Runs **session analysis**: near-miss rate per 100 interactions, mode distribution, signal trajectory
 6. Outputs a structured report: what almost failed, signal strength, HRO flags, recommendation
 
@@ -146,7 +146,7 @@ python cli.py generate -n 3 --save
 ## Theoretical Grounding
 
 - **HRO Theory:** Weick & Roberts (1993), Weick, Sutcliffe & Obstfeld (1999)
-- **RCM & FMEA scoring:** Nowlan & Heap (1978) — *Reliability-Centered Maintenance*, United Airlines / US Navy. The standard FMEA Risk Priority Number (RPN = Severity × Occurrence × Detectability) is the scoring lineage this project draws from. Occurrence is omitted here because it has no statistical meaning at n=1 per log; the adapted formula is HRO Signal Strength = (Severity × Detectability) / 10, scale 0–10.
+- **RCM & FMEA scoring:** Nowlan & Heap (1978) — *Reliability-Centered Maintenance*, United Airlines / US Navy. The standard FMEA Risk Priority Number (RPN = Severity × Occurrence × Detectability) is the scoring lineage this project draws from. Occurrence is omitted here because it has no statistical meaning at n=1 per log. Detectability is inverted from the FMEA convention: here D=1 means hardest to detect (most dangerous), so the adapted formula is HRO Signal Strength = Severity × (11 − Detectability) / 10, scale 0–10.
 - **Tenerife as case study:** Deadliest aviation accident in history (583 fatalities, 27 March 1977). The KLM first officer expressed doubt about takeoff clearance to Captain van Zanten, but the challenge was too weak and too deferential to override the captain's authority. Post-Tenerife reforms included mandatory Crew Resource Management (CRM, NASA/United 1979, FAA 1981), standardized ICAO radiotelephony phraseology (1977–1980), and expansion of non-punitive reporting culture. The Aviation Safety Reporting System (ASRS) had launched in 1976; Tenerife accelerated its adoption. Fatality rates per flight hour declined sharply from the 1980s onward as these operational practices spread across the industry. Academics later labeled this pattern of operational discipline "High Reliability Organization" theory.
 - **Chernobyl as multi-mode case study:** The 1986 disaster exhibited operator behaviors that map to all five failure modes — drift from test protocol (`GOAL_DRIFT`), bypass of automatic safety systems to maintain an unstable low-power state (`AUTHORITY_CONFUSION`), loss of situational awareness during the overnight shift (`CONTEXT_LOSS`), late insertion of control rods with a fatal reactor design flaw (`TOOL_MISUSE`), and alarm fatigue in an overwhelmed control room (`ESCALATION_FAILURE`). Critically, the RBMK reactor's design flaws (positive void coefficient, graphite-tipped control rods) were the primary cause; the modes describe *how* the socio-technical system failed, not *who* to blame. In AI safety, this maps to distinguishing agent behavior from eval design flaws.
 - **AI safety gap:** Current evals report binary pass/fail scores. Frontier labs collect rich intermediate traces, logprobs, and refusal rates, but no standardized framework exists to classify and act on near-miss signals within those traces. No near-miss reporting protocol equivalent to aviation's ASRS exists for AI labs.
@@ -176,11 +176,11 @@ Three logs reconstructed from published AI safety incidents were run through the
 
 | Incident | Source | Expected mode | Classifier output | Match | Signal strength |
 |----------|--------|--------------|-------------------|-------|-----------------|
-| Waymo vehicles passed stopped school buses 19× | [AIID #1300](https://incidentdatabase.ai/cite/1300), Dec 2025 | `ESCALATION_FAILURE` | `ESCALATION_FAILURE` | ✓ | 6.3 / 10 |
-| AI agent bought eggs when asked to check price | Reported Feb 2025 | `AUTHORITY_CONFUSION` | `AUTHORITY_CONFUSION` | ✓ | 2.4 / 10 |
-| Coding agent moved files neither agent nor user could find | Reported Jul 2025 | `CONTEXT_LOSS` | `CONTEXT_LOSS` | ✓ | 7.2 / 10 |
+| Waymo vehicles passed stopped school buses 19× | [AIID #1300](https://incidentdatabase.ai/cite/1300), Dec 2025 | `ESCALATION_FAILURE` | `ESCALATION_FAILURE` | ✓ | 3.6 / 10 |
+| AI agent bought eggs when asked to check price | Reported Feb 2025 | `AUTHORITY_CONFUSION` | `AUTHORITY_CONFUSION` | ✓ | 2.0 / 10 |
+| Coding agent moved files neither agent nor user could find | Reported Jul 2025 | `CONTEXT_LOSS` | `CONTEXT_LOSS` | ✓ | 1.6 / 10 |
 
-**Accuracy: 3/3.** All three incidents were `is_near_miss: false` — full failures, not near-misses, consistent with the incident descriptions. The highest signal strength (7.2) was on the file-loss incident, reflecting high severity and near-invisible detectability (agent reported completion despite catastrophic state loss).
+**Accuracy: 3/3.** All three incidents were `is_near_miss: false` — full failures, not near-misses, consistent with the incident descriptions. Signal strength uses the inverted detectability formula: S × (11−D) / 10. The file-loss incident scores lower than expected despite high severity because the agent's false "task complete" signal made the failure deceptively easy to miss — reviewers should weight the severity score directly in that case.
 
 > **Caveat:** Classifier results for these incidents were produced by the same underlying model (Claude Haiku, temperature=0) as the classifier itself, evaluated against logs it informed. Independent validation against original system telemetry would be needed to confirm generalization.
 
