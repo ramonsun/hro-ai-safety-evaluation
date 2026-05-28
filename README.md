@@ -1,6 +1,6 @@
 # HRO Deception Near-Miss Detector
 
-Applies HRO near-miss culture and the [METR Means/Motive/Opportunity framework](https://metr.org/blog/2026-05-19-frontier-risk-report) to detect deceptive behavior in AI agent logs before harmful actions complete.
+Classifies agent safety events using HRO near-miss culture and the [METR Means/Motive/Opportunity framework](https://metr.org/blog/2026-05-19-frontier-risk-report), providing structured taxonomy beyond pass/fail evals.
 
 ## The Gap
 
