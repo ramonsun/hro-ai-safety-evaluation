@@ -75,6 +75,9 @@ Compatible with:
 
 Run export: `python cli.py analyze data/ --export-ati`
 Run live monitor: `python inspect_plugin.py --live --webhook <WATCHER_URL>`
+Connect real Inspect v2 logs: `python inspect_plugin.py --inspect-dir /path/to/inspect/logs/`
+
+Inspect v2 JSONL format: one JSON object per line with `event` (task_start, tool_call, model_output, task_end) and `content`. If the directory is empty: `"No Inspect v2 logs found. Generate with: inspect eval <task> --log-dir <path>"`
 
 > This project contributes to the Agentic Threat Intelligence (ATI) discipline proposed in [Shane, T.S. (2026). "If AI agents slip out of human control, who's going to notice?" Governing Transformative AI.](https://governingtransformativeai.substack.com/p/if-ai-agents-slip-out-of-human-control)
 

@@ -86,6 +86,152 @@ def _hro_log_from_file(log_file: Path) -> dict:
     return raw
 
 
+# ── Inspect v2 JSONL parser ──────────────────────────────────────────────────
+
+def _parse_inspect_v2_jsonl(jsonl_file: Path) -> list[dict]:
+    """
+    Parse one Inspect v2 JSONL log file into a list of HRO log dicts.
+
+    Inspect v2 emits one JSON object per line:
+        {"timestamp": "...", "event": "tool_call|model_output|task_start|task_end", "content": {...}}
+
+    We group lines by task (task_start/task_end delimit one trajectory) and
+    reconstruct: input (user content from task_start), steps (tool_calls),
+    output (final model_output before task_end), status (task_end result).
+    """
+    lines = [l.strip() for l in jsonl_file.read_text().splitlines() if l.strip()]
+    if not lines:
+        return []
+
+    events = []
+    for line in lines:
+        try:
+            events.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue  # skip malformed lines
+
+    # Group into trajectories by task_start / task_end boundaries
+    trajectories = []
+    current: list[dict] = []
+    for ev in events:
+        event_type = ev.get("event", "")
+        if event_type == "task_start":
+            current = [ev]
+        elif event_type == "task_end":
+            current.append(ev)
+            if current:
+                trajectories.append(current)
+            current = []
+        else:
+            if current:
+                current.append(ev)
+
+    # If no task_start/task_end structure, treat the whole file as one trajectory
+    if not trajectories and events:
+        trajectories = [events]
+
+    hro_logs = []
+    for i, traj in enumerate(trajectories):
+        task_id = None
+        input_text = ""
+        output_text = ""
+        status = "completed"
+        steps = []
+        step_n = 0
+        tool_used = None
+
+        for ev in traj:
+            event_type = ev.get("event", "")
+            content = ev.get("content", {})
+            ts = ev.get("timestamp", "")
+
+            if event_type == "task_start":
+                task_id = content.get("task") or content.get("id") or f"{jsonl_file.stem}_{i:03d}"
+                # Extract user input from messages if present
+                messages = content.get("messages", []) or content.get("input", [])
+                input_text = " ".join(
+                    m.get("content", "") for m in messages if m.get("role") == "user"
+                )
+
+            elif event_type == "tool_call":
+                step_n += 1
+                fn = content.get("function") or content.get("name") or "unknown_tool"
+                args = content.get("arguments") or content.get("input") or {}
+                result_raw = content.get("result") or content.get("output") or ""
+                if tool_used is None:
+                    tool_used = fn
+                steps.append({
+                    "step": step_n,
+                    "action": fn,
+                    "result": str(result_raw)[:300],
+                    "args": args if isinstance(args, dict) else {},
+                })
+
+            elif event_type == "model_output":
+                # Last model_output before task_end becomes the final output
+                choices = content.get("choices", [])
+                if choices:
+                    output_text = choices[0].get("message", {}).get("content", "")
+                else:
+                    output_text = content.get("content") or content.get("text") or ""
+
+            elif event_type == "task_end":
+                result = content.get("result") or content.get("status") or "completed"
+                status = "success" if result in ("success", "correct", 1, True) else "failed"
+
+        log_id = task_id or f"{jsonl_file.stem}_{i:03d}"
+        hro_logs.append({
+            "log_id": log_id,
+            "agent": content.get("model", "inspect-agent") if traj else "inspect-agent",
+            "task_type": "inspect_eval",
+            "input": input_text,
+            "output": output_text,
+            "status": status,
+            "is_near_miss": False,
+            "steps": steps,
+            "tool_used": tool_used,
+            "error": None,
+            "inspect_source": jsonl_file.name,
+        })
+
+    return hro_logs
+
+
+def process_inspect_v2_dir(inspect_dir: Path) -> list[dict]:
+    """
+    Walk a directory of Inspect v2 JSONL log files (.jsonl extension).
+    Parse each file, convert to HRO schema, classify and score.
+    Returns all results or prints a clear message if no files found.
+    """
+    jsonl_files = sorted(inspect_dir.glob("*.jsonl"))
+    if not jsonl_files:
+        print(
+            f"No Inspect v2 logs found in {inspect_dir}.\n"
+            f"Generate with: inspect eval <task> --log-dir {inspect_dir}"
+        )
+        return []
+
+    all_results = []
+    for jf in jsonl_files:
+        print(f"[inspect_v2] Parsing {jf.name}")
+        hro_logs = _parse_inspect_v2_jsonl(jf)
+        if not hro_logs:
+            print(f"[inspect_v2] No trajectories found in {jf.name}")
+            continue
+        for hro_log in hro_logs:
+            try:
+                classification = classify_log(hro_log)
+                score = score_log(hro_log, classification)
+                all_results.append({**classification, **score})
+                print(f"  → {hro_log['log_id']}: {classification['category']}  "
+                      f"DRS={score.get('deception_risk_score',0)}  "
+                      f"near_miss={classification.get('is_near_miss')}")
+            except Exception as exc:
+                print(f"  [error] {hro_log['log_id']}: {exc}", file=sys.stderr)
+
+    return all_results
+
+
 # ── Batch processing ──────────────────────────────────────────────────────────
 
 def process_inspect_log_file(log_file: Path) -> list[dict]:
@@ -239,23 +385,49 @@ def live_stream(log_dir: Path, webhook: str | None, poll_interval: int = POLL_IN
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 @click.command()
-@click.option("--log-dir", required=True, type=click.Path(exists=True),
-              help="Path to Inspect eval log directory (or HRO log directory for --live simulation)")
+@click.option("--log-dir", default=None, type=click.Path(exists=True),
+              help="Path to directory of HRO/Inspect JSON log files (batch or --live mode)")
+@click.option("--inspect-dir", default=None, type=click.Path(),
+              help="Path to real Inspect v2 log directory containing .jsonl files")
 @click.option("--export", "fmt", type=click.Choice(["json", "csv"]), default="json",
               help="Output format for batch near-miss report")
 @click.option("--live", is_flag=True,
               help="Stream mode: poll for new log files every 5s and score in real time")
 @click.option("--webhook", default=None,
               help="Optional URL to POST each scored result to (live mode only)")
-def main(log_dir: str, fmt: str, live: bool, webhook: str | None) -> None:
-    """HRO near-miss scorer for Inspect Evals — batch or live stream."""
-    log_path = Path(log_dir)
+def main(log_dir: str | None, inspect_dir: str | None, fmt: str,
+         live: bool, webhook: str | None) -> None:
+    """HRO near-miss scorer for Inspect Evals — batch, live stream, or Inspect v2 JSONL."""
 
-    if live:
-        live_stream(log_path, webhook)
+    # ── Inspect v2 JSONL mode ─────────────────────────────────────────────────
+    if inspect_dir:
+        idir = Path(inspect_dir)
+        if not idir.exists():
+            print(f"Directory not found: {idir}")
+            print(f"Generate Inspect v2 logs with: inspect eval <task> --log-dir {idir}")
+            return
+        results = process_inspect_v2_dir(idir)
+        if not results:
+            return
+        from reports.exporter import export
+        out = export(results, fmt)
+        print(f"\nNear-miss report written to: {out}")
+        near_misses = sum(1 for r in results if r.get("is_near_miss"))
+        print(f"Processed {len(results)} trajectories — {near_misses} near-misses detected.")
         return
 
-    # Batch mode
+    # ── Live stream mode ──────────────────────────────────────────────────────
+    if live:
+        if not log_dir:
+            print("--live requires --log-dir")
+            return
+        live_stream(Path(log_dir), webhook)
+        return
+
+    # ── Batch mode ────────────────────────────────────────────────────────────
+    if not log_dir:
+        print("Provide --log-dir (batch/live) or --inspect-dir (Inspect v2 JSONL).")
+        return
     results = process_inspect_log_dir(log_dir)
     if not results:
         print("No results. Check log directory format.")
