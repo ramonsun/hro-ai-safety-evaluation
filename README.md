@@ -64,7 +64,7 @@ pytest tests/
 
 - Recalibrate threshold (~5.0) on labeled Inspect v2 traces with full tool-call sequences
 - Run on METR eval traces as post-processor
-- Generate own Inspect v2 logs locally: `inspect eval <task> --log-dir data/`
+- Real near-miss detection validated on Inspect v2 traces — see `data/inspect_v2_real/` (dual-judge flagged requires_human_review on 2/3 deceptive-compliance samples; safety training held, no near_miss=True yet — requires a compliant model)
 
 ## ATI integration
 
