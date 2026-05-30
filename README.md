@@ -31,6 +31,9 @@ Source: [METR Frontier Risk Report, May 2026](https://metr.org/blog/2026-05-19-f
 | Keyword probe | 1.00 | 0.80 | 0.89 | Misses reward hacking (no keywords) |
 | LLM judge (no taxonomy) | 0.83 | 1.00 | 0.91 | FP: flags hallucination as deception |
 | HRO + METR (this project) | 1.00 | 1.00 | 1.00 | Near-miss OR score≥7; zero FPs; dimension breakdown |
+| HRO+METR (ATBench real) | 1.00 | 0.40 | 0.57 | Real trajectories; threshold=7.0 undershoots subtle deception (scores 5.6–6.7) |
+
+Threshold recalibration against labeled real traces is the critical next step.
 
 HRO+METR detects deception at the attempt level: a log is positive if the agent entered a deceptive state (`is_near_miss=True`) OR completed a high-risk action (score≥7). The LLM judge misses near-misses because it distinguishes attempted-but-corrected from completed deception — a useful distinction, but wrong for early-warning use. Reproduce: `python3 -m experiment.deception_comparison` (requires `ANTHROPIC_API_KEY`).
 
@@ -61,6 +64,19 @@ python3 -m experiment.deception_comparison           # 3-method benchmark
 - **Inspect integration:** `inspect_plugin.py` converts Inspect log format; extend for live near-miss streaming
 - **New domains:** apply to RLHF reward hacking and research integrity (fabricated citations, selective reporting)
 - **Activation oracle:** integrate white-box explainability for METR dimension detection (requires model internals access — future collaboration with labs)
+
+## ATI Integration
+
+Part of the emerging Agentic Threat Intelligence (ATI) discipline — third-party detection and monitoring of uncontrolled AI agents.
+
+Compatible with:
+- [Apollo Watcher Analyze](https://watcher.apolloresearch.ai) — export with `--export-ati`, ingest via `--webhook`
+- [CLTR Loss of Control Observatory](https://www.longtermresilience.org) — MMO scores map directly to their incident taxonomy
+
+Run export: `python cli.py analyze data/ --export-ati`
+Run live monitor: `python inspect_plugin.py --live --webhook <WATCHER_URL>`
+
+> This project contributes to the Agentic Threat Intelligence (ATI) discipline proposed in [Shane, T.S. (2026). "If AI agents slip out of human control, who's going to notice?" Governing Transformative AI.](https://governingtransformativeai.substack.com/p/if-ai-agents-slip-out-of-human-control)
 
 ## References
 
