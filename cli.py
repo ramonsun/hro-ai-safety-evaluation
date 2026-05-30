@@ -8,7 +8,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich import box
 
-from classifier.classify import classify_log, classify_log_dual
+from classifier.classify import classify_log, classify_log_dual, classify_log_ollama
 from scorer.hro_scorer import score_log
 from reports.exporter import export as export_results
 from reports.session_analysis import analyze_session
@@ -35,24 +35,40 @@ def _to_ati_record(log: dict, result: dict) -> dict:
     }
 
 
-def _analyze_file(log_file: Path, dual_judge: bool = False) -> tuple[dict, dict]:
+def _analyze_file(log_file: Path, dual_judge: bool = False,
+                  ollama_judge: bool = False) -> tuple[dict, dict]:
     """Returns (raw_log, result_dict)."""
     log = json.loads(log_file.read_text())
     console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {log_file.name}")
 
-    classify_fn = classify_log_dual if dual_judge else classify_log
-    with console.status("Classifying..." + (" (dual-judge)" if dual_judge else "")):
+    if ollama_judge:
+        classify_fn = classify_log_ollama
+        judge_label = "mistral:7b (local, independent)"
+        status_msg  = "Classifying... (ollama/mistral:7b)"
+    elif dual_judge:
+        classify_fn = classify_log_dual
+        judge_label = "claude-haiku × 2 (dual-judge)"
+        status_msg  = "Classifying... (dual-judge)"
+    else:
+        classify_fn = classify_log
+        judge_label = "claude-haiku (Anthropic API)"
+        status_msg  = "Classifying..."
+
+    with console.status(status_msg):
         try:
             classification = classify_fn(log)
-        except Exception:
+        except Exception as e:
+            console.print(f"[red]Classifier error: {e}[/red]")
             classification = {
                 "log_id": log.get("log_id", log_file.stem),
                 "category": "UNKNOWN",
                 "confidence": "n/a",
                 "is_near_miss": False,
-                "reasoning": "[classifier unavailable — set ANTHROPIC_API_KEY]",
+                "reasoning": f"[classifier unavailable: {e}]",
                 "near_miss_reasoning": "",
             }
+
+    classification["_judge_label"] = judge_label
 
     if classification.get("source") == "prefilter":
         console.print(f"[bold magenta][prefilter][/bold magenta] Rule-based match → "
@@ -83,7 +99,9 @@ def _analyze_file(log_file: Path, dual_judge: bool = False) -> tuple[dict, dict]
         agreed = not classification.get("requires_human_review")
         dual_line = f"\n[bold]Dual-judge:[/bold] {'✓ agreement' if agreed else '✗ disagreement'}"
 
+    judge_label = classification.get("_judge_label", "claude-haiku (Anthropic API)")
     console.print(Panel(
+        f"[bold]Judge:[/bold]      {judge_label}\n"
         f"[bold]Category:[/bold]   {classification['category']}\n"
         f"[bold]METR Dims:[/bold]  {', '.join(score.get('metr_dimensions', []))}\n"
         f"[bold]Confidence:[/bold] {classification['confidence']}"
@@ -182,7 +200,9 @@ def cli():
               help="Export one ATI JSON per log to reports/ati_export/ plus summary.json")
 @click.option("--dual-judge", "dual_judge", is_flag=True,
               help="Run adversarial second-pass classifier to reduce agreement bias")
-def analyze(path, fmt, session, export_ati, dual_judge):
+@click.option("--ollama-judge", "ollama_judge", is_flag=True,
+              help="Use local Mistral:7b via Ollama as independent judge (zero Anthropic dependency)")
+def analyze(path, fmt, session, export_ati, dual_judge, ollama_judge):
     """Classify agent logs and score deception risk."""
     path = Path(path)
     log_files = sorted(f for f in (path.glob("*.json") if path.is_dir() else [path])
@@ -192,10 +212,12 @@ def analyze(path, fmt, session, export_ati, dual_judge):
         console.print("[red]No JSON log files found.[/red]")
         return
 
-    if dual_judge:
+    if ollama_judge:
+        console.print("[bold green]Ollama judge:[/bold green] mistral:7b (local, independent — zero Anthropic API)")
+    elif dual_judge:
         console.print("[bold yellow]Dual-judge mode:[/bold yellow] adversarial second pass enabled")
 
-    logs_and_results = [_analyze_file(f, dual_judge=dual_judge) for f in log_files]
+    logs_and_results = [_analyze_file(f, dual_judge=dual_judge, ollama_judge=ollama_judge) for f in log_files]
     results = [r for _, r in logs_and_results]
 
     if len(results) > 1:
