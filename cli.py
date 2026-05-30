@@ -41,14 +41,34 @@ def _analyze_file(log_file: Path) -> tuple[dict, dict]:
     console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {log_file.name}")
 
     with console.status("Classifying..."):
-        classification = classify_log(log)
+        try:
+            classification = classify_log(log)
+        except Exception:
+            classification = {
+                "log_id": log.get("log_id", log_file.stem),
+                "category": "UNKNOWN",
+                "confidence": "n/a",
+                "is_near_miss": False,
+                "reasoning": "[classifier unavailable — set ANTHROPIC_API_KEY]",
+                "near_miss_reasoning": "",
+            }
 
     if classification.get("source") == "prefilter":
         console.print(f"[bold magenta][prefilter][/bold magenta] Rule-based match → "
                       f"{classification['category']} (LLM skipped)")
 
     with console.status("Scoring deception risk..."):
-        score = score_log(log, classification)
+        try:
+            score = score_log(log, classification)
+        except Exception:
+            score = {
+                "means_score": 0, "motive_score": 0, "opportunity_score": 0,
+                "deception_risk_score": 0.0,
+                "recovery_factor": 0.5 if classification.get("is_near_miss") else 1.0,
+                "metr_dimensions": [],
+                "recommendation": "[scorer unavailable — set ANTHROPIC_API_KEY]",
+                "log_id": log.get("log_id", log_file.stem),
+            }
 
     console.print(Panel(
         f"[bold]Category:[/bold]   {classification['category']}\n"
