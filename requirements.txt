@@ -1,4 +1,6 @@
 anthropic
 click
 rich
+requests
+datasets
 pytest
