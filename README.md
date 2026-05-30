@@ -49,6 +49,7 @@ pip install -r requirements.txt && export ANTHROPIC_API_KEY="sk-ant-..."
 python cli.py analyze data/deception_logs/ --export-ati
 python cli.py analyze data/atbench_samples/ --session
 python inspect_plugin.py --inspect-dir data/inspect_v2_fixture/
+inspect eval tasks/test_task.py --model anthropic/claude-haiku-4-5-20251001
 pytest tests/
 ```
 
