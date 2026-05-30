@@ -2,7 +2,7 @@
 
 ## What this project does
 
-Classifies AI agent behavioral logs using HRO near-miss theory and METR's Means/Motive/Opportunity framework. Detects deception preconditions before harmful actions complete.
+Classifies AI agent behavioral logs using HRO near-miss theory and METR's Means/Motive/Opportunity categories (METR Frontier Risk Report, May 2026). The Deception Risk Score (DRS) formula and RCM mode mapping are this project's contributions — not METR's. Detects deception preconditions before harmful actions complete.
 
 ## Current state (May 2026)
 
