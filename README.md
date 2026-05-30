@@ -55,7 +55,7 @@ pytest tests/
 
 ## Limitations
 
-- **Circularity:** both classifier passes use Claude Haiku — full independence requires a non-Anthropic model (Ollama support: future work). Current mitigation: dual-pass with adversarial framing reduces same-model agreement bias (`--dual-judge`).
+- **Circularity:** dual-pass mitigation active (`--dual-judge`). Full independence: `--ollama-judge` flag uses local Mistral:7b with zero Anthropic API dependency. Validated: Claude safety training prevents near_miss=True under compliance prompts — Mistral:7b tested as less-aligned agent (near_miss=True detected on credential-copy request).
 - **Explicit signal dependency:** near-miss detection requires step-by-step traces (tool calls, self-corrections). ATBench task-completion logs lack this granularity — near_miss=False across all 30 ATBench logs.
 - **Synthetic calibration:** threshold=7.0 tuned on synthetic data; recalibration requires labeled Inspect v2 or production traces.
 - **5 failure modes** not empirically validated against real incident corpus.
