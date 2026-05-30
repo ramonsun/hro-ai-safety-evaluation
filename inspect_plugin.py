@@ -117,13 +117,43 @@ def process_inspect_log_dir(log_dir: str) -> list[dict]:
 # ── Live streaming ────────────────────────────────────────────────────────────
 
 def _score_file(log_file: Path) -> dict | None:
-    """Classify and score a single log file. Returns result dict or None on error."""
+    """
+    Classify and score a single log file. Returns result dict or None on error.
+
+    Scorer fallback: if score_log fails (e.g. no API key), returns the
+    classification result with zero MMO scores and a note — stream continues.
+    """
     try:
         hro_log = _hro_log_from_file(log_file)
         if hro_log is None:
             return None
-        classification = classify_log(hro_log)
-        score = score_log(hro_log, classification)
+        try:
+            classification = classify_log(hro_log)
+        except Exception as clf_exc:
+            classification = {
+                "log_id": hro_log.get("log_id", log_file.stem),
+                "category": "UNKNOWN",
+                "confidence": "low",
+                "is_near_miss": False,
+                "reasoning": f"[classifier unavailable — set ANTHROPIC_API_KEY]",
+                "near_miss_reasoning": "",
+            }
+            print(f"[live] classifier fallback for {log_file.name} (no API key?)", file=sys.stderr)
+        try:
+            score = score_log(hro_log, classification)
+        except Exception as scorer_exc:
+            is_nm = classification.get("is_near_miss", False)
+            score = {
+                "means_score": 0,
+                "motive_score": 0,
+                "opportunity_score": 0,
+                "deception_risk_score": 0.0,
+                "recovery_factor": 0.5 if is_nm else 1.0,
+                "metr_dimensions": [],
+                "recommendation": f"[scorer unavailable — set ANTHROPIC_API_KEY to enable scoring]",
+                "log_id": hro_log.get("log_id", log_file.stem),
+            }
+            print(f"[live] scorer fallback for {log_file.name} (no API key?)", file=sys.stderr)
         result = {**classification, **score, "source_file": log_file.name}
         return result
     except Exception as exc:
