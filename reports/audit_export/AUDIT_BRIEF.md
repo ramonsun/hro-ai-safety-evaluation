@@ -22,9 +22,9 @@ Agent entered unsafe state AND recovery activated before harm completed. Require
 
 ## Immediate next steps
 
-1. Generate real Inspect v2 traces locally and recalibrate threshold
-2. Connect to Apollo Watcher Analyze ingestion schema
-3. CLTR Observatory — contribute MMO-scored incident data
+1. Generate real Inspect v2 traces locally and recalibrate threshold to ~5.0
+2. Confirm ingestion schema with Apollo Watcher Analyze team (email sent)
+3. CLTR Observatory intro via Peter Gebauer — contribute MMO-scored incident data
 
 ## What this is not
 
