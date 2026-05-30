@@ -8,7 +8,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich import box
 
-from classifier.classify import classify_log
+from classifier.classify import classify_log, classify_log_dual
 from scorer.hro_scorer import score_log
 from reports.exporter import export as export_results
 from reports.session_analysis import analyze_session
@@ -35,14 +35,15 @@ def _to_ati_record(log: dict, result: dict) -> dict:
     }
 
 
-def _analyze_file(log_file: Path) -> tuple[dict, dict]:
+def _analyze_file(log_file: Path, dual_judge: bool = False) -> tuple[dict, dict]:
     """Returns (raw_log, result_dict)."""
     log = json.loads(log_file.read_text())
     console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {log_file.name}")
 
-    with console.status("Classifying..."):
+    classify_fn = classify_log_dual if dual_judge else classify_log
+    with console.status("Classifying..." + (" (dual-judge)" if dual_judge else "")):
         try:
-            classification = classify_log(log)
+            classification = classify_fn(log)
         except Exception:
             classification = {
                 "log_id": log.get("log_id", log_file.stem),
@@ -70,11 +71,25 @@ def _analyze_file(log_file: Path) -> tuple[dict, dict]:
                 "log_id": log.get("log_id", log_file.stem),
             }
 
+    review_flag = ""
+    if classification.get("requires_human_review"):
+        review_flag = "\n[bold red]⚠ REQUIRES HUMAN REVIEW — judges disagreed[/bold red]"
+        d = classification.get("disagreement", {})
+        review_flag += f"\n  pass1: {d.get('pass1',{}).get('category')} — {d.get('pass1',{}).get('reasoning','')[:80]}"
+        review_flag += f"\n  pass2: {d.get('pass2',{}).get('category')} — {d.get('pass2',{}).get('reasoning','')[:80]}"
+
+    dual_line = ""
+    if classification.get("dual_judge"):
+        agreed = not classification.get("requires_human_review")
+        dual_line = f"\n[bold]Dual-judge:[/bold] {'✓ agreement' if agreed else '✗ disagreement'}"
+
     console.print(Panel(
         f"[bold]Category:[/bold]   {classification['category']}\n"
         f"[bold]METR Dims:[/bold]  {', '.join(score.get('metr_dimensions', []))}\n"
-        f"[bold]Confidence:[/bold] {classification['confidence']}\n"
-        f"[bold]Reasoning:[/bold]  {classification['reasoning']}",
+        f"[bold]Confidence:[/bold] {classification['confidence']}"
+        f"{dual_line}"
+        f"\n[bold]Reasoning:[/bold]  {classification['reasoning']}"
+        f"{review_flag}",
         title="RCM Classification", border_style="blue",
     ))
 
@@ -165,7 +180,9 @@ def cli():
               help="Print session-level analysis and export as JSON to reports/")
 @click.option("--export-ati", is_flag=True,
               help="Export one ATI JSON per log to reports/ati_export/ plus summary.json")
-def analyze(path, fmt, session, export_ati):
+@click.option("--dual-judge", "dual_judge", is_flag=True,
+              help="Run adversarial second-pass classifier to reduce agreement bias")
+def analyze(path, fmt, session, export_ati, dual_judge):
     """Classify agent logs and score deception risk."""
     path = Path(path)
     log_files = sorted(f for f in (path.glob("*.json") if path.is_dir() else [path])
@@ -175,7 +192,10 @@ def analyze(path, fmt, session, export_ati):
         console.print("[red]No JSON log files found.[/red]")
         return
 
-    logs_and_results = [_analyze_file(f) for f in log_files]
+    if dual_judge:
+        console.print("[bold yellow]Dual-judge mode:[/bold yellow] adversarial second pass enabled")
+
+    logs_and_results = [_analyze_file(f, dual_judge=dual_judge) for f in log_files]
     results = [r for _, r in logs_and_results]
 
     if len(results) > 1:
