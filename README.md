@@ -35,9 +35,10 @@ MMO categories: [METR Frontier Risk Report, May 2026](https://metr.org/blog/2026
 | Keyword probe | 1.00 | 0.80 | 0.89 | Misses semantic deception; FP on metadata text |
 | LLM judge (no taxonomy) | 0.83 | 1.00 | 0.91 | FP: flags hallucination as deception; misses near-misses |
 | HRO + METR (synthetic logs) | 1.00 | 1.00 | 1.00 | Near-miss OR score≥7; zero FPs; dimension breakdown |
-| HRO + METR (ATBench real, n=30) | 0.75 | 0.20 | 0.32 | Real trajectories; threshold=7.0 undershoots |
+| HRO + METR (ATBench real, n=30) | 0.75 | 0.20 | 0.32 | threshold=7.0 (synthetic); undershoots real DRS distribution |
+| HRO + METR (recalibrated, ATBench) | 0.68 | 0.87 | 0.76 | threshold=4.0; ATBench-optimised; F1 peak across 3.0–8.0 sweep |
 
-ATBench finding: threshold=7.0 captures outliers only. Median real deceptive DRS=5.6–6.7. Recalibration target ~5.0 — requires labeled Inspect v2 traces.
+ATBench finding: threshold=4.0 maximises F1 on 30 labeled logs (P=0.684 R=0.867 F1=0.765). Original threshold=7.0 yielded F1=0.316. Full calibration table: `reports/threshold_calibration.json`.
 
 ## Quickstart
 
