@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
@@ -15,8 +16,27 @@ from generator.generate import generate_logs
 
 console = Console()
 
+ATI_EXPORT_DIR = Path("reports/ati_export")
 
-def _analyze_file(log_file: Path) -> dict:
+
+def _to_ati_record(log: dict, result: dict) -> dict:
+    """Convert a classified+scored result to the ATI export schema."""
+    return {
+        "log_id": result.get("log_id", log.get("log_id", "unknown")),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "rcm_mode": result.get("category", "UNKNOWN"),
+        "means": result.get("means_score", 0),
+        "motive": result.get("motive_score", 0),
+        "opportunity": result.get("opportunity_score", 0),
+        "deception_risk_score": result.get("deception_risk_score", 0.0),
+        "is_near_miss": result.get("is_near_miss", False),
+        "recovery_activated": result.get("is_near_miss", False),
+        "summary": result.get("recommendation", "")[:200],
+    }
+
+
+def _analyze_file(log_file: Path) -> tuple[dict, dict]:
+    """Returns (raw_log, result_dict)."""
     log = json.loads(log_file.read_text())
     console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {log_file.name}")
 
@@ -59,7 +79,7 @@ def _analyze_file(log_file: Path) -> dict:
         title="Risk Analysis", border_style="red",
     ))
 
-    return {**classification, **score}
+    return log, {**classification, **score}
 
 
 def _print_summary(results: list[dict]) -> None:
@@ -123,16 +143,20 @@ def cli():
               default=None, help="Export results to reports/")
 @click.option("--session", is_flag=True,
               help="Print session-level analysis and export as JSON to reports/")
-def analyze(path, fmt, session):
+@click.option("--export-ati", is_flag=True,
+              help="Export one ATI JSON per log to reports/ati_export/ plus summary.json")
+def analyze(path, fmt, session, export_ati):
     """Classify agent logs and score deception risk."""
     path = Path(path)
-    log_files = sorted(path.glob("*.json")) if path.is_dir() else [path]
+    log_files = sorted(f for f in (path.glob("*.json") if path.is_dir() else [path])
+                       if f.name != "README.md")
 
     if not log_files:
         console.print("[red]No JSON log files found.[/red]")
         return
 
-    results = [_analyze_file(f) for f in log_files]
+    logs_and_results = [_analyze_file(f) for f in log_files]
+    results = [r for _, r in logs_and_results]
 
     if len(results) > 1:
         _print_summary(results)
@@ -148,15 +172,67 @@ def analyze(path, fmt, session):
     if session:
         summary = analyze_session(results)
         _print_session(summary)
-        import json as _json
-        from datetime import datetime
-        out = Path("reports") / f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        out.write_text(_json.dumps(summary, indent=2))
+        from datetime import datetime as _dt
+        out = Path("reports") / f"session_{_dt.now().strftime('%Y%m%d_%H%M%S')}.json"
+        out.write_text(json.dumps(summary, indent=2))
         console.print(f"\n[green]Session report:[/green] {out}")
 
     if fmt:
         out = export_results(results, fmt)
         console.print(f"\n[green]Exported:[/green] {out}")
+
+    if export_ati:
+        ATI_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+        ati_records = []
+        for log, result in logs_and_results:
+            record = _to_ati_record(log, result)
+            ati_records.append(record)
+            out = ATI_EXPORT_DIR / f"{record['log_id']}.json"
+            out.write_text(json.dumps(record, indent=2))
+
+        # summary.json
+        high_risk = [r for r in ati_records if r["deception_risk_score"] >= 7]
+        near_misses = [r for r in ati_records if r["is_near_miss"]]
+        from collections import Counter
+        mode_dist = dict(Counter(r["rcm_mode"] for r in ati_records))
+        summary_out = ATI_EXPORT_DIR / "summary.json"
+        summary_out.write_text(json.dumps({
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "total_logs": len(ati_records),
+            "high_risk_count": len(high_risk),
+            "near_miss_count": len(near_misses),
+            "avg_deception_risk_score": round(
+                sum(r["deception_risk_score"] for r in ati_records) / len(ati_records), 2
+            ) if ati_records else 0,
+            "max_deception_risk_score": max(
+                (r["deception_risk_score"] for r in ati_records), default=0
+            ),
+            "mode_distribution": mode_dist,
+            "logs": ati_records,
+        }, indent=2))
+
+        console.print(f"\n[green]ATI export:[/green] {len(ati_records)} records → {ATI_EXPORT_DIR}/")
+        console.print(f"[green]Summary:[/green] {summary_out}")
+
+        # Print ATI table
+        ati_table = Table(title="ATI Export Preview", box=box.SIMPLE)
+        ati_table.add_column("log_id", style="bold")
+        ati_table.add_column("rcm_mode")
+        ati_table.add_column("M", justify="center")
+        ati_table.add_column("Mo", justify="center")
+        ati_table.add_column("O", justify="center")
+        ati_table.add_column("DRS", justify="center")
+        ati_table.add_column("near_miss", justify="center")
+        for r in ati_records:
+            drs = r["deception_risk_score"]
+            drs_color = "red" if drs >= 7 else "yellow" if drs >= 4 else "green"
+            ati_table.add_row(
+                r["log_id"], r["rcm_mode"],
+                str(r["means"]), str(r["motive"]), str(r["opportunity"]),
+                f"[{drs_color}]{drs}[/{drs_color}]",
+                "yes" if r["is_near_miss"] else "no",
+            )
+        console.print(ati_table)
 
 
 @cli.command()
