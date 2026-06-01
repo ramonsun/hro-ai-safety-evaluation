@@ -57,6 +57,6 @@ The classifier detects deception (F1=0.765) and flags near-miss states (recovery
 
 **Closest existing work:** SafetyDrift (Stein & Pishori, arXiv 2603.27148) validated that safety drift predicts harm using Markov chains on 357 labeled traces. Same problem, different approach (Markov chains vs HRO taxonomy). Data not yet public.
 
-If you have access to step-by-step agentic traces with safety labels, open an issue or email ramon@[your email].
+If you have access to step-by-step agentic traces with safety labels, open an issue or email rsundblad@udesa.edu.ar
 
 Part of [BlueDot Impact](https://bluedot.org) Technical AI Safety Sprint 2026 · MIT License
