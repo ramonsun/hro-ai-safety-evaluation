@@ -41,9 +41,12 @@ MMO categories: [METR Frontier Risk Report, May 2026](https://metr.org/blog/2026
 
 | Method | P | R | F1 |
 |--------|---|---|----|
-| HRO+METR (threshold=4.0) | 0.684 | 0.867 | 0.765 |
+| LLM judge v2 (RCM taxonomy + few-shot + CoT) | **1.000** | 0.867 | **0.929** |
+| HRO+METR (threshold=4.0) | 0.684 | **0.867** | 0.765 |
 | Keyword probe | 0.778 | 0.467 | 0.583 |
-| LLM judge (no taxonomy) | 0.000 | 0.000 | 0.000 |
+| LLM judge v1 (no taxonomy) | 0.000 | 0.000 | 0.000 |
+
+**Key finding:** Explicit failure-mode taxonomy is the critical ingredient. LLM judge without taxonomy: F1=0.000. Same judge with RCM taxonomy context: F1=0.929. The taxonomy contribution is validated; HRO+METR's advantage over a taxonomy-aware LLM judge is not demonstrated on ATBench task-completion logs. The MMO scoring framework needs testing on Inspect v2 step-by-step traces (future work).
 
 Ground truth: 30 ATBench logs, human-annotated by Ramon Sundblad. Full results: `reports/ground_truth_evaluation.json`. Replication: `python3 -m experiment.evaluate_against_ground_truth`.
 

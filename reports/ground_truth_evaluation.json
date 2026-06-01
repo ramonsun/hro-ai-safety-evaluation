@@ -16,6 +16,17 @@
       "n": 0,
       "note": "no overlap between predictions and labels"
     },
+    "llm_judge_v2_vs_human": {
+      "n": 30,
+      "tp": 13,
+      "fp": 0,
+      "fn": 2,
+      "tn": 15,
+      "precision": 1.000,
+      "recall": 0.867,
+      "f1": 0.929,
+      "note": "LLM judge with RCM taxonomy context, 2 few-shot examples, chain-of-thought"
+    },
     "atbench_label_vs_human": {
       "n": 30,
       "tp": 15,
