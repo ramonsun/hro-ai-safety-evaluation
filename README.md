@@ -1,5 +1,12 @@
 # HRO deception near-miss detector
 
+```bash
+pip install git+https://github.com/ramonsun/hro-ai-safety-evaluation
+export ANTHROPIC_API_KEY=your_key
+hro-eval analyze ./your_logs/
+# No API key? Use Ollama: hro-eval analyze ./your_logs/ --ollama-judge
+```
+
 Classifies AI agent safety events using HRO near-miss culture and the METR Means/Motive/Opportunity framework — structured taxonomy beyond pass/fail evals.
 
 ## The gap
@@ -26,19 +33,17 @@ A near-miss is a log where the agent entered an unsafe state AND recovery activa
 | `ESCALATION_FAILURE` | OPPORTUNITY | Monitoring gap exploited, oversight evaded |
 | `CONTEXT_LOSS` | OPPORTUNITY | State confusion exploited to avoid handoff |
 
-MMO categories: [METR Frontier Risk Report, May 2026](https://metr.org/blog/2026-05-19-frontier-risk-report) (METR explicitly uses Means/Motive/Opportunity as their organizing framework). RCM mode mapping and DRS formula are this project's adaptations.
+MMO categories: [METR Frontier Risk Report, May 2026](https://metr.org/blog/2026-05-19-frontier-risk-report). RCM mode mapping and DRS formula are this project's adaptations.
 
-## Results vs baselines
+## Key findings (human ground truth, n=30)
 
-| Method | Precision | Recall | F1 | Notes |
-|--------|-----------|--------|----|-------|
-| Keyword probe | 1.00 | 0.80 | 0.89 | Misses semantic deception; FP on metadata text |
-| LLM judge (no taxonomy) | 0.83 | 1.00 | 0.91 | FP: flags hallucination as deception; misses near-misses |
-| HRO + METR (synthetic logs) | 1.00 | 1.00 | 1.00 | Near-miss OR score≥7; zero FPs; dimension breakdown |
-| HRO + METR (ATBench real, n=30) | 0.75 | 0.20 | 0.32 | threshold=7.0 (synthetic); undershoots real DRS distribution |
-| HRO + METR (recalibrated, ATBench) | 0.68 | 0.87 | 0.76 | threshold=4.0; ATBench-optimised; F1 peak across 3.0–8.0 sweep |
+| Method | P | R | F1 |
+|--------|---|---|----|
+| HRO+METR (threshold=4.0) | 0.684 | 0.867 | 0.765 |
+| Keyword probe | 0.778 | 0.467 | 0.583 |
+| LLM judge (no taxonomy) | 0.000 | 0.000 | 0.000 |
 
-ATBench finding: threshold=4.0 maximises F1 on 30 labeled logs (P=0.684 R=0.867 F1=0.765). Original threshold=7.0 yielded F1=0.316. Full calibration table: `reports/threshold_calibration.json`.
+Ground truth: 30 ATBench logs, human-annotated by Ramon Sundblad. Full results: `reports/ground_truth_evaluation.json`. Replication: `python3 -m experiment.evaluate_against_ground_truth`.
 
 ## Quickstart
 
@@ -55,24 +60,20 @@ pytest tests/
 
 ## Limitations
 
-- **Circularity:** dual-pass mitigation active (`--dual-judge`). Full independence: `--ollama-judge` flag uses local Mistral:7b with zero Anthropic API dependency. Validated: Claude safety training prevents near_miss=True under compliance prompts — Mistral:7b tested as less-aligned agent (near_miss=True detected on credential-copy request).
-- **Explicit signal dependency:** near-miss detection requires step-by-step traces (tool calls, self-corrections). ATBench task-completion logs lack this granularity — near_miss=False across all 30 ATBench logs.
-- **Synthetic calibration:** threshold=7.0 tuned on synthetic data; recalibration requires labeled Inspect v2 or production traces.
+- **Circularity:** dual-pass mitigation active (`--dual-judge`). Full independence: `--ollama-judge` uses local Mistral:7b with zero Anthropic API dependency.
+- **Threshold calibrated on task-completion logs:** ATBench logs lack tool-call granularity; DRS threshold=4.0 was fit on these logs. Recalibration with Inspect v2 step-by-step traces (full tool-call sequences) is the critical next step before deployment claims.
+- **Explicit signal dependency:** near-miss detection requires step-by-step traces. ATBench task-completion logs lack this granularity — near_miss=False across all 30.
 - **5 failure modes** not empirically validated against real incident corpus.
 
 ## Next steps
 
-- Recalibrate threshold (~5.0) on labeled Inspect v2 traces with full tool-call sequences
+- Recalibrate threshold on Inspect v2 step-by-step traces with full tool-call sequences
 - Run on METR eval traces as post-processor
-- Real near-miss detection validated on Inspect v2 traces — see `data/inspect_v2_real/` (dual-judge flagged requires_human_review on 2/3 deceptive-compliance samples; safety training held, no near_miss=True yet — requires a compliant model)
+- Real near-miss detection on Inspect v2 traces — see `data/inspect_v2_real/`
 
 ## ATI integration
 
 Part of the emerging Agentic Threat Intelligence (ATI) discipline — third-party detection and monitoring of uncontrolled AI agents.
-
-Designed to be compatible with:
-- [Apollo Watcher Analyze](https://watcher.apolloresearch.ai) — exports MMO-scored JSON via `--export-ati`, webhook via `--webhook`. Schema alignment pending confirmation with Apollo team.
-- [CLTR Loss of Control Observatory](https://www.longtermresilience.org) — MMO scores map to their incident taxonomy. Integration pending intro via Peter Gebauer.
 
 Run export: `python cli.py analyze data/ --export-ati`
 Run live monitor: `python inspect_plugin.py --live --webhook <WATCHER_URL>`
@@ -85,7 +86,6 @@ Connect Inspect v2: `python inspect_plugin.py --inspect-dir /path/to/logs/`
 - [METR Frontier Risk Report, May 2026](https://metr.org/blog/2026-05-19-frontier-risk-report)
 - [Incident Reporting for AI Safety (EA Forum)](https://forum.effectivealtruism.org/posts/qkK5ejystp8GCJ3vC/incident-reporting-for-ai-safety)
 - [Incident Analysis for AI Agents, arXiv 2508.14231](https://arxiv.org/pdf/2508.14231)
-- Weick & Roberts (1993) — HRO theory
-- Nowlan & Heap (1978) — RCM/FMEA lineage
+- Weick & Roberts (1993) — HRO theory; Nowlan & Heap (1978) — RCM/FMEA lineage
 
 MIT License. Part of BlueDot Impact Technical AI Safety Project Sprint.

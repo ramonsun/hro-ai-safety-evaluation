@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hro-safety-eval"
+version = "0.1.0"
+description = "HRO near-miss classifier for AI agent behavioral logs"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.105.0",
+    "click",
+    "rich",
+    "requests",
+]
+
+[project.optional-dependencies]
+inspect = ["inspect-ai", "inspect-evals"]
+datasets = ["datasets"]
+dev = ["pytest"]
+
+[project.scripts]
+hro-eval = "hro_safety_eval.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/ramonsun/hro-ai-safety-evaluation"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hro_safety_eval*", "classifier*", "scorer*", "taxonomy*", "baselines*", "generator*", "reports*"]
