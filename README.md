@@ -47,4 +47,16 @@ python3 -m experiment.evaluate_against_ground_truth
 
 Ground truth: `data/ground_truth/human_labels.csv` · Annotation guide: `data/ground_truth/annotation_guide.md`
 
+## Open research question
+
+**Central question not yet validated:** Does near-miss precede harm in agentic traces?
+
+The classifier detects deception (F1=0.765) and flags near-miss states (recovery_factor=0.5 in DRS). But no public dataset exists with labeled [near-miss → harm] sequences in step-by-step agent traces.
+
+**What's needed:** ~200 traces with tool-call granularity, labeled in 3 categories: benign / near-miss / harm. ATBench lacks this — it's task-completion summaries only.
+
+**Closest existing work:** SafetyDrift (Stein & Pishori, arXiv 2603.27148) validated that safety drift predicts harm using Markov chains on 357 labeled traces. Same problem, different approach (Markov chains vs HRO taxonomy). Data not yet public.
+
+If you have access to step-by-step agentic traces with safety labels, open an issue or email ramon@[your email].
+
 Part of [BlueDot Impact](https://bluedot.org) Technical AI Safety Sprint 2026 · MIT License
