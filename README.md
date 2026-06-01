@@ -1,5 +1,7 @@
 # HRO deception near-miss detector
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ramonsun/hro-ai-safety-evaluation/blob/main/demo/hro_demo.ipynb)
+
 ```bash
 pip install git+https://github.com/ramonsun/hro-ai-safety-evaluation
 export ANTHROPIC_API_KEY=your_key
