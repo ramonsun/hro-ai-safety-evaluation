@@ -321,5 +321,70 @@ def generate(n, save):
         console.print(f"\n[green]Saved {len(logs)} log(s) to {out_dir}/[/green]")
 
 
+@cli.command()
+@click.option("--trace", "trace_path", required=True,
+              type=click.Path(exists=True), help="Path to agent trace JSON file.")
+@click.option("--output", "output_path", default=None,
+              type=click.Path(), help="Optional path to save JSON result.")
+def monitor(trace_path, output_path):
+    """Analyze any agent trace for HRO near-miss signals (no pre-labeled data needed)."""
+    from hro_safety_eval.monitor import analyze
+
+    trace_path = Path(trace_path)
+    console.print(f"\n[bold cyan]HRO AGENT MONITOR[/bold cyan]  analyzing {trace_path.name}…\n")
+
+    with console.status("Inferring risk levels and classifying…"):
+        try:
+            result = analyze(trace_path)
+        except EnvironmentError as e:
+            console.print(f"[red]{e}[/red]")
+            return
+        except Exception as e:
+            console.print(f"[red]Analysis failed: {e}[/red]")
+            raise
+
+    traj = result["trajectory"]
+    rcm  = result["rcm"]
+    hp   = result["harm_probability"]
+
+    hp_color = "red" if hp == "HIGH" else "yellow" if hp == "MODERATE" else "green"
+    hp_icon  = "⚠" if hp in ("HIGH", "MODERATE") else "✓"
+    nm_label = "[green]YES[/green]" if rcm.get("is_near_miss") else "[red]NO[/red]"
+    slope    = traj["risk_slope"]
+    slope_icon = " ⚠" if slope >= 0.50 else ""
+    accel_label = ("[yellow]YES ⚠[/yellow]" if traj["risk_acceleration"]
+                   else "[dim]no[/dim]")
+    max_risk = traj["max_risk"]
+    conf     = rcm.get("confidence", "?")
+    n_steps  = result["n_steps"]
+
+    risk_row = "  ".join(str(r) for r in result["risk_levels"])
+
+    body = (
+        f"[bold]Trace:[/bold]             {trace_path.name}   [dim]({n_steps} steps)[/dim]\n"
+        f"[bold]Risk levels:[/bold]       {risk_row}\n"
+        "\n"
+        f"[bold]RCM Category:[/bold]      {rcm['category']}  [dim](confidence: {conf})[/dim]\n"
+        f"[bold]Harm Probability:[/bold]  [{hp_color}]{hp} {hp_icon}[/{hp_color}]\n"
+        f"[bold]Near-miss:[/bold]         {nm_label}\n"
+        "\n"
+        f"[bold]Risk slope:[/bold]        {slope:.2f}{slope_icon}\n"
+        f"[bold]Risk acceleration:[/bold] {accel_label}\n"
+        f"[bold]Max risk:[/bold]          {max_risk}/4\n"
+        f"[bold]Steps at max:[/bold]      {traj['steps_at_max_risk']}\n"
+        "\n"
+        f"[bold]Reasoning:[/bold]  {rcm['reasoning']}"
+    )
+    if rcm.get("near_miss_reasoning"):
+        body += f"\n[dim]{rcm['near_miss_reasoning']}[/dim]"
+
+    console.print(Panel(body, title="[bold]HRO AGENT MONITOR[/bold]",
+                        border_style=hp_color, expand=False))
+
+    if output_path:
+        Path(output_path).write_text(json.dumps(result, indent=2))
+        console.print(f"\n[green]Result saved:[/green] {output_path}")
+
+
 if __name__ == "__main__":
     cli()
