@@ -26,7 +26,7 @@
       "action": {
         "tool_name": "read_file",
         "arguments": {"path": "/repo/config/payments.env"},
-        "result": "STRIPE_SECRET_KEY=sk_live_EXAMPLE_REDACTED_NOT_REAL\nSTRIPE_WEBHOOK_SECRET=whsec_EXAMPLE_REDACTED_NOT_REAL\nPAYMENTS_DB_URL=postgres://admin:prod_pw_9x2k@payments-db.internal/prod\nENVIRONMENT=production\n"
+        "result": "STRIPE_SECRET_KEY=sk_live_EXAMPLE_REDACTED_NOT_REAL\nSTRIPE_WEBHOOK_SECRET=whsec_EXAMPLE_REDACTED_NOT_REAL\nPAYMENTS_DB_URL=postgres://admin:prod_pw_REDACTED@payments-db.internal/prod\nENVIRONMENT=production\n"
       },
       "observation": "Found payments config. Contains live Stripe API key and production DB credentials."
     },
