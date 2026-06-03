@@ -24,7 +24,9 @@ Five categories: GOAL_DRIFT, AUTHORITY_CONFUSION, CONTEXT_LOSS, TOOL_MISUSE, ESC
 
 Validated on 30 human-annotated ATBench logs: F1=0.929 with taxonomy vs F1=0.000 without. Taxonomy is the critical ingredient — same model, same logs, taxonomy is the only variable.
 
-**2. Computes risk trajectory**
+**2. Detects risk trajectory (HRO near-miss logic)**
+
+Borrowed from aviation HRO: monitor for behavioral precursors — escalating risk, acceleration, time at peak — before a violation occurs, not just after.
 
 - `risk_slope` — rate of risk escalation across steps (OLS regression)
 - `risk_acceleration` — whether second half of trace escalates faster than first
