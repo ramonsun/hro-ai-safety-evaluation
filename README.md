@@ -113,7 +113,6 @@ Ground truth: `data/ground_truth/human_labels.csv` · Annotation guide: `data/gr
 
 SafetyDrift: Dhodapkar & Pishori, RPI/SCU  
 Paper: [arXiv:2603.27148](https://arxiv.org/abs/2603.27148)  
-Dataset: [huggingface.co/datasets/aditya593/SafetyDrift-traces](https://huggingface.co/datasets/aditya593/SafetyDrift-traces)  
 License: CC-BY-NC-4.0. Contact authors for data access.
 
 ## Citation
