@@ -4,6 +4,8 @@
 
 HRO-inspired safety evaluation for AI agent traces.
 
+High Reliability Organizations (HRO) are industries like aviation and nuclear power that operate with near-zero failure rates despite high complexity. Reliability Centered Maintenance (RCM) is a failure-mode taxonomy developed in aviation to classify why systems fail. This project adapts both frameworks to evaluate AI agent safety.
+
 ## Install and use
 
 ```bash
