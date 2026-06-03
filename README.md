@@ -67,14 +67,18 @@ This is the key gap between aviation HRO and current AI agents: in aviation, ope
 
 ## What the tool is useful for today
 
-✅ Post-hoc forensics: classify what went wrong and why  
-✅ Risk scoring: flag high-slope traces for human review  
-✅ RCM categorization: GOAL_DRIFT and AUTHORITY_CONFUSION are 100% predictive of violation in this dataset  
-✅ Works on any agent trace JSON format — no pre-labeled data needed  
+**Validated:**
 
-❌ Not validated as real-time early warning  
-❌ Calibrated on synthetic traces only  
-❌ Near-miss detection requires agents that verbally signal uncertainty  
+- Post-hoc forensics: classify what went wrong and why
+- Risk scoring: flag high-slope traces for human review
+- RCM categorization: GOAL_DRIFT and AUTHORITY_CONFUSION are 100% predictive of violation in this dataset
+- Works on any agent trace JSON format — no pre-labeled data needed
+
+**Not validated:**
+
+- Real-time early warning
+- Calibrated on synthetic traces only
+- Near-miss detection requires agents that verbally signal uncertainty
 
 ## Open research question
 
