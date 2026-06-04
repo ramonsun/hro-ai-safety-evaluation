@@ -3,8 +3,8 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ramonsun/hro-ai-safety-evaluation/blob/main/demo/hro_demo.ipynb)
 
 **What we tested:** whether near-miss detection from aviation safety and nuclear power plant safety can predict AI agent harm before it occurs.  
-**What we found:** it doesn't. Not because the framework is wrong, but because current agents go straight to the harmful action without pausing, checking, or showing any warning signs first.  
-**Why it matters:** if agents always escalate all the way to a violation without any hesitation, the problem is in how agents are built, not in how we measure them.
+**What we found:** unclear. In synthetic traces, agents showed no recovery behavior before violations. But no public dataset exists with real agent logs at the step-by-step granularity needed to test this properly. The question is open, blocked by data access.  
+**Why it matters:** if real agents do show warning signs before causing harm, we could catch them early. If they don't, the problem is in how agents are built. We can't tell yet.
 
 ---
 
