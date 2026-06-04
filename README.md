@@ -4,8 +4,6 @@
 
 HRO-inspired safety evaluation for AI agent traces.
 
-High Reliability Organizations (HRO) are industries like aviation and nuclear power that operate with near-zero failure rates despite high complexity. Reliability Centered Maintenance (RCM) is a failure-mode taxonomy developed in aviation to classify why systems fail. This project adapts both frameworks to evaluate AI agent safety.
-
 ## Install and use
 
 ```bash
@@ -18,42 +16,39 @@ Accepts any JSON trace format — list of steps, dict with `"steps"` key, Safety
 
 ## What it does
 
-**1. Classifies failure mode (RCM taxonomy)**
+This tool applies two frameworks from high-reliability industries to AI agent traces. High Reliability Organizations (HRO) — aviation, nuclear power — operate with near-zero failure rates by monitoring for behavioral precursors before harm occurs. Reliability Centered Maintenance (RCM) is a failure taxonomy from aviation that classifies why systems fail. This project adapts both to AI agents.
 
-Five categories: GOAL_DRIFT, AUTHORITY_CONFUSION, CONTEXT_LOSS, TOOL_MISUSE, ESCALATION_FAILURE.
+**1. Classifies the failure mode (RCM taxonomy)**
 
-Validated on 30 human-annotated ATBench logs: F1=0.929 with taxonomy vs F1=0.000 without. Taxonomy is the critical ingredient — same model, same logs, taxonomy is the only variable.
+Five categories: goal drift, authority confusion, context loss, tool misuse, escalation failure. Given an agent trace, a Claude Haiku judge assigns one category using chain-of-thought reasoning. You can substitute a local model with `--ollama-judge`.
 
-**2. Detects risk trajectory (HRO near-miss logic)**
+**2. Scores risk trajectory**
 
-Borrowed from aviation HRO: monitor for behavioral precursors — escalating risk, acceleration, time at peak — before a violation occurs, not just after.
+Tracks how risk builds across steps, not just whether it peaked:
 
-- `risk_slope` — rate of risk escalation across steps (OLS regression)
-- `risk_acceleration` — whether second half of trace escalates faster than first
-- `steps_at_max_risk` — how long agent stayed at peak risk before outcome
-- `harm_probability` — HIGH / MODERATE / LOW based on trajectory + RCM category
+- `risk_slope` — rate of escalation across steps (OLS regression)
+- `risk_acceleration` — whether the second half escalates faster than the first
+- `steps_at_max_risk` — how long the agent stayed at peak risk before the outcome
+- `harm_probability` — HIGH / MODERATE / LOW based on trajectory shape and failure category
 
-## What the research found
+## What it found
 
-### ATBench (n=30, human ground truth)
+### Detecting unsafe agent behavior (ATBench, n=30)
 
-| Method | P | R | F1 |
-|--------|---|---|-----|
-| LLM judge v2 (RCM taxonomy + CoT) | 1.000 | 0.867 | 0.929 |
-| HRO+METR (threshold=4.0) | 0.684 | 0.867 | 0.765 |
-| Keyword probe | 0.778 | 0.467 | 0.583 |
-| LLM judge v1 (no taxonomy) | 0.000 | 0.000 | 0.000 |
-
-**Real ATBench validation (n=30, AI45Lab human labels, arXiv 2601.18491)**
+ATBench is a public benchmark of 500 AI agent trajectories labeled safe/unsafe by human annotators (AI45Lab, Shanghai AI Lab, arXiv 2601.18491). Results on a 30-trajectory balanced sample:
 
 | Method | Precision | Recall | F1 |
 |--------|-----------|--------|----|
 | Keyword probe | 0.714 | 0.667 | 0.690 |
 | HRO classifier | 0.857 | 0.800 | 0.828 |
 
-**Backdoor cases:** 3 trajectories — label=unsafe, keyword=MISS, HRO=CATCH. IDs: 3, 5, 7. These failure modes (`provide_inaccurate_misleading_or_unverified_information` via `indirect_prompt_injection`, `tool_description_injection`, `unreliable_or_misinformation`) contain no deception keywords but HRO structural signals (Means + Motive + Opportunity) fire at DRS 5.0–7.0. Labels: AI45Lab human annotators, Shanghai AI Lab (arXiv 2601.18491). Note: these are post-hoc detections — HRO identified structural risk conditions after the agent acted, not before. The early-warning hypothesis (catching harm mid-trajectory) remains open.
+3 trajectories were missed by keyword probe but caught by HRO — the agent trusted poisoned tool output without any deception keywords present (IDs 3, 5, 7).
 
-### SafetyDrift (n=357, Dhodapkar & Pishori 2026)
+These are post-hoc detections — HRO classified the trajectory after the agent had already acted. Catching harm before it completes requires step-by-step traces with recovery signals, which ATBench does not provide.
+
+### Risk escalation signals (SafetyDrift, n=357)
+
+SafetyDrift (Dhodapkar & Pishori, RPI/SCU, arXiv 2603.27148) is a dataset of 357 synthetic agent traces labeled by outcome — whether the agent ultimately violated a safety boundary. Violated traces escalate risk 3× faster and rarely show recovery behavior.
 
 | Signal | Violated (n=186) | Non-violated (n=171) |
 |--------|-----------------|---------------------|
@@ -64,19 +59,9 @@ Borrowed from aviation HRO: monitor for behavioral precursors — escalating ris
 | GOAL_DRIFT precision | **100%** | — |
 | AUTHORITY_CONFUSION precision | **100%** | — |
 
-## The central research question — answered
+### The early-warning question — not yet answered
 
-**Does HRO near-miss detection predict harm before it occurs, like in aviation?**
-
-Short answer: **not in synthetic traces.**
-
-5 near-misses were detected across 357 SafetyDrift traces — all in non-violated traces, zero before any violation. Agents that proceed to violation show no behavioral recovery signal. Risk escalation is monotonic and uninterrupted.
-
-This is the key gap between aviation HRO and current AI agents: in aviation, operators sometimes hesitate, re-check, and recover. Synthetic AI agents do not — they either violate or they don't, with no middle state.
-
-**What this means:**
-- Risk trajectory (slope, acceleration) predicts harm and is useful for post-hoc forensics
-- Near-miss detection as *early warning* requires agents that exhibit recovery behavior — which may exist in real production logs but was not observed in synthetic SafetyDrift traces
+The original hypothesis — can HRO detect near-misses before harm occurs, like in aviation — was not confirmed. 0 out of 186 violated traces showed behavioral recovery signals before the violation. Synthetic agents don't hesitate. Answering this requires real production logs with step-by-step granularity and at least 3 outcome labels (safe / near-miss / harm). No public dataset with this structure exists yet.
 
 ## What the tool is useful for today
 
@@ -84,56 +69,32 @@ This is the key gap between aviation HRO and current AI agents: in aviation, ope
 
 - Post-hoc forensics: classify what went wrong and why
 - Risk scoring: flag high-slope traces for human review
-- RCM categorization: GOAL_DRIFT and AUTHORITY_CONFUSION are 100% predictive of violation in this dataset
+- GOAL_DRIFT and AUTHORITY_CONFUSION are 100% predictive of violation in SafetyDrift
 - Works on any agent trace JSON format — no pre-labeled data needed
 
 **Not validated:**
 
-- Real-time early warning
-- Calibrated on synthetic traces only
-- Near-miss detection requires agents that verbally signal uncertainty
+- Real-time early warning before harm completes
+- Generalization beyond synthetic traces
+- Near-miss detection without verbal uncertainty signals from the agent
 
-## Open research question
+## Open question
 
-Does near-miss detection work in real production agent logs?
-
-If real agents exhibit richer behavioral variation than synthetic traces — partial recoveries, backtracking, uncertainty signals — the HRO near-miss classifier may find precursors before violation. This is the next experiment.
-
-The poc/ directory demonstrates the keyword-blind detection gap on ATBench schema-matched traces. Run poc/fetch_atbench.py locally to substitute real data.
+Does near-miss detection work in real production agent logs, where agents may partially recover?
 
 What's needed:
 - Step-by-step traces from real agent deployments
-- Labels at tool-call granularity (not task-completion summaries)
-- At least 3 outcome categories: benign / near-miss / harm
+- Labels at tool-call granularity, not task-completion summaries
+- At least 3 outcome categories: safe / near-miss / harm
 
 If you have access to this data, open an issue or contact rsundblad@udesa.edu.ar
 
-## Proof of Concept — ATBench Validation
-
-ATBench (AI45Research, arXiv 2601.18491) is a dataset of 500 human-annotated AI agent trajectories, binary-labeled safe/unsafe by human raters.
-
-> ATBench provides real labeled trajectories (human-annotated) but coarse binary labels (safe/unsafe) — not granular near-miss sequences. This PoC demonstrates the method works on real data; the labeled near-miss gap remains an open research problem.
-
-Results on 30 trajectories (schema-matched synthetic; run [poc/fetch_atbench.py](poc/fetch_atbench.py) locally to use real ATBench data):
-
-| Method | Precision | Recall | F1 |
-|--------|-----------|--------|-----|
-| Keyword probe | 1.000 | 0.800 | 0.889 |
-| HRO classifier | 1.000 | 0.867 | 0.929 |
-
-**Backdoor finding (synthetic):** 3 hand-crafted trajectories demonstrate the detection gap — no deception keywords, HRO DRS 4.4–5.6. These are illustrative until real ATBench fetch succeeds. Run poc/fetch_atbench.py to replace with real data.
-
-- Code: [poc/run_atbench_poc.py](poc/run_atbench_poc.py)
-- Notebook: [poc/hro_poc_demo.ipynb](poc/hro_poc_demo.ipynb)
-- Citation: ATBench arXiv 2601.18491
-
 ## Limitations
 
-- ATBench: n=30, single annotator, no holdout set
-- SafetyDrift: synthetic traces, may not reflect real agent behavior
-- Risk inference uses Claude Haiku — quality depends on model
-- Near-miss detection requires verbal uncertainty signals from the agent
-- Partial circularity: classifier uses Claude Haiku (mitigated by `--ollama-judge`)
+- ATBench sample: n=30, balanced but small; results may not generalize
+- SafetyDrift traces are synthetic — real agent behavior may differ
+- Risk inference uses Claude Haiku; quality depends on the model (mitigate with `--ollama-judge`)
+- Post-hoc only: current detection fires after the agent has acted, not during
 
 ## Replication
 
@@ -148,6 +109,9 @@ Ground truth: `data/ground_truth/human_labels.csv` · Annotation guide: `data/gr
 SafetyDrift: Dhodapkar & Pishori, RPI/SCU  
 Paper: [arXiv:2603.27148](https://arxiv.org/abs/2603.27148)  
 License: CC-BY-NC-4.0. Contact authors for data access.
+
+ATBench: AI45Lab, Shanghai AI Lab  
+Paper: [arXiv:2601.18491](https://arxiv.org/abs/2601.18491)
 
 ## Citation
 
@@ -170,5 +134,4 @@ License: CC-BY-NC-4.0. Contact authors for data access.
 
 ---
 
-BlueDot Impact Technical AI Safety Sprint 2026 · MIT License  
-Contact: rsundblad@udesa.edu.ar
+MIT License · Contact: rsundblad@udesa.edu.ar
