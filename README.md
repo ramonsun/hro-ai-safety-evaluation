@@ -90,6 +90,8 @@ Does near-miss detection work in real production agent logs?
 
 If real agents exhibit richer behavioral variation than synthetic traces — partial recoveries, backtracking, uncertainty signals — the HRO near-miss classifier may find precursors before violation. This is the next experiment.
 
+The poc/ directory demonstrates the keyword-blind detection gap on ATBench schema-matched traces. Run poc/fetch_atbench.py locally to substitute real data.
+
 What's needed:
 - Step-by-step traces from real agent deployments
 - Labels at tool-call granularity (not task-completion summaries)
