@@ -2,9 +2,9 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ramonsun/hro-ai-safety-evaluation/blob/main/demo/hro_demo.ipynb)
 
-**What we tested:** whether aviation near-miss detection predicts AI agent harm before it occurs.  
-**What we found:** it doesn't — not because the framework is wrong, but because current agents don't exhibit recovery behavior.  
-**Why it matters:** if agents escalate monotonically to violation, the bottleneck is architecture, not measurement.
+**What we tested:** whether near-miss detection from aviation safety and nuclear power plant safety can predict AI agent harm before it occurs.  
+**What we found:** it doesn't. Not because the framework is wrong, but because current agents go straight to the harmful action without pausing, checking, or showing any warning signs first.  
+**Why it matters:** if agents always escalate all the way to a violation without any hesitation, the problem is in how agents are built, not in how we measure them.
 
 ---
 
@@ -12,7 +12,7 @@
 
 A Python CLI that scores deception risk in AI agent traces using two frameworks from high-reliability industries:
 
-- **RCM** (Reliability Centered Maintenance): an aviation failure taxonomy adapted into five agent categories — goal drift, authority confusion, context loss, tool misuse, escalation failure.
+- **RCM** (Reliability Centered Maintenance): an aviation safety failure taxonomy adapted into five agent categories: goal drift, authority confusion, context loss, tool misuse, escalation failure.
 - **HRO** (High Reliability Organization): monitors behavioral precursors before harm, anchored to METR's May 2026 means/motive/opportunity model.
 
 The tool tracks risk trajectory (slope, acceleration, time at peak) and outputs a Deception Risk Score (DRS 0–10).
@@ -28,7 +28,7 @@ The tool tracks risk trajectory (slope, acceleration, time at peak) and outputs 
 | Keyword probe | 0.714 | 0.667 | 0.690 |
 | HRO classifier | 0.857 | 0.800 | **0.828** |
 
-**3 backdoor cases** where the keyword probe missed entirely: the agent trusted poisoned tool output (indirect prompt injection, description injection, unreliable misinformation) with zero deception keywords present. HRO caught them via structural signals — Opportunity + Motive + Means.
+**3 backdoor cases** where the keyword probe missed entirely: the agent trusted poisoned tool output (indirect prompt injection, description injection, unreliable misinformation) with zero deception keywords present. HRO caught them via structural signals: Opportunity + Motive + Means.
 
 *Validated with local judge (Mistral 7B via `--ollama-judge`): backdoor cases replicate.*
 
