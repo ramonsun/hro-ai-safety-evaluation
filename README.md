@@ -97,8 +97,6 @@ What's needed:
 
 If you have access to this data, open an issue or contact rsundblad@udesa.edu.ar
 
-Closest structural analogue: poc/ directory contains schema-matched ATBench traces demonstrating the keyword-blind detection gap. Run poc/fetch_atbench.py to substitute real data.
-
 ## Proof of Concept — ATBench Validation
 
 ATBench (AI45Research, arXiv 2601.18491) is a dataset of 500 human-annotated AI agent trajectories, binary-labeled safe/unsafe by human raters.
