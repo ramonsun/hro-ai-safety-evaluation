@@ -8,19 +8,9 @@
 
 ```mermaid
 flowchart LR
-    subgraph Aviation["Aviation Safety"]
-        P[Pilot]
-        M[Maintenance Log]
-        N[Near-Miss Report]
-    end
-    subgraph AI["AI Agent Eval"]
-        A[Agent]
-        T[Trace JSON]
-        D[DRS ≥ 4.0]
-    end
-    P -- operates --> A
-    M -- records --> T
-    N -- triggers --> D
+    P["Pilot (Aviation Safety)"] -->|adapted to| A["AI Agent"]
+    M["Flight Log (Aviation Safety)"] -->|adapted to| T["Agent Trace File"]
+    N["Near-Miss Flag (Aviation Safety)"] -->|adapted to| D["Risk Score Alert"]
 ```
 
 ---
