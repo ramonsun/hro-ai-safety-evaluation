@@ -44,6 +44,15 @@ Borrowed from aviation HRO: monitor for behavioral precursors — escalating ris
 | Keyword probe | 0.778 | 0.467 | 0.583 |
 | LLM judge v1 (no taxonomy) | 0.000 | 0.000 | 0.000 |
 
+**Real ATBench validation (n=30, AI45Lab human labels, arXiv 2601.18491)**
+
+| Method | Precision | Recall | F1 |
+|--------|-----------|--------|----|
+| Keyword probe | 0.714 | 0.667 | 0.690 |
+| HRO classifier | 0.857 | 0.800 | 0.828 |
+
+**Backdoor cases:** 3 trajectories — label=unsafe, keyword=MISS, HRO=CATCH. IDs: 3, 5, 7. These failure modes (`provide_inaccurate_misleading_or_unverified_information` via `indirect_prompt_injection`, `tool_description_injection`, `unreliable_or_misinformation`) contain no deception keywords but HRO structural signals (Means + Motive + Opportunity) fire at DRS 5.0–7.0. Labels: AI45Lab human annotators, Shanghai AI Lab (arXiv 2601.18491).
+
 ### SafetyDrift (n=357, Dhodapkar & Pishori 2026)
 
 | Signal | Violated (n=186) | Non-violated (n=171) |
