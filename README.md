@@ -6,13 +6,6 @@
 **What we found:** unclear. In synthetic traces, agents showed no recovery behavior before violations. But no public dataset exists with real agent logs at the step-by-step granularity needed to test this properly. The question is open, blocked by data access.  
 **Why it matters:** if real agents do show warning signs before causing harm, we could catch them early. If they don't, the problem is in how agents are built. We can't tell yet.
 
-```mermaid
-flowchart LR
-    P["Pilot (Aviation Safety)"] -->|adapted to| A["AI Agent"]
-    M["Flight Log (Aviation Safety)"] -->|adapted to| T["Agent Trace File"]
-    N["Near-Miss Flag (Aviation Safety)"] -->|adapted to| D["Risk Score Alert"]
-```
-
 ---
 
 ## What this is
