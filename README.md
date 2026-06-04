@@ -37,7 +37,7 @@ Tracks how risk builds across steps, not just whether it peaked:
 - `steps_at_max_risk`: how long the agent stayed at peak risk before the outcome
 - `harm_probability`: HIGH / MODERATE / LOW based on trajectory shape and failure category
 
-## What it found
+## What was found
 
 ### Detecting unsafe agent behavior (ATBench, n=30)
 
