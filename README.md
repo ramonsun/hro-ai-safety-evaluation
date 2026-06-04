@@ -4,7 +4,7 @@
 
 HRO-inspired safety evaluation for AI agent traces.
 
-This tool classifies why AI agent failures happen and scores how fast risk escalates. The original goal — detecting near-misses before harm occurs, like in aviation — was not confirmed on synthetic traces. The classification and risk-scoring parts are validated and useful today.
+Aviation and nuclear industries use High Reliability Organization (HRO) frameworks to catch near-misses before they become accidents. This project asks whether the same idea works for AI agents: can we detect warning signs in an agent's behavior before it causes harm? The tool classifies why failures happen (using a failure taxonomy from aviation called RCM) and scores how fast risk is escalating across an agent's steps. The original hypothesis, that the tool could catch near-misses mid-trajectory like aviation safety systems do, was not confirmed on synthetic traces. The failure classification and risk-scoring parts are validated and useful today.
 
 ## Install and use
 
