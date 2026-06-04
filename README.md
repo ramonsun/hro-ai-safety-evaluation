@@ -58,20 +58,19 @@ export ANTHROPIC_API_KEY=your_key
 hro-eval monitor --trace your_agent_log.json
 ```
 
-Accepts any JSON trace format: list of steps, dict with `"steps"` key, SafetyDrift format, OpenAI messages. No pre-labeled data required.
+Accepts any JSON trace format. No pre-labeled data required. Substitute a local model with `--ollama-judge`.
 
 ---
 
-## Open question
+## Open research agenda
 
-Does near-miss detection work in real production agent logs, where agents may partially recover?
+Three experiments would validate or invalidate the near-miss approach:
 
-What's needed:
-- Step-by-step traces from real agent deployments
-- Labels at tool-call granularity, not task-completion summaries
-- At least 3 outcome categories: safe / near-miss / harm
+1. Label 100 existing Inspect AI traces with a 3-outcome schema (safe / near-miss / harm)
+2. Test agent variance: do GPT-4o-class agents show higher recovery variance than Claude 3.5?
+3. Controlled architecture study: give agents an explicit "pause and check" tool, then measure near-miss rate
 
-If you have access to this data, open an issue or contact rsundblad@udesa.edu.ar
+If you have access to production agent traces with step-by-step tool-call granularity, open an issue or email [rsundblad@udesa.edu.ar](mailto:rsundblad@udesa.edu.ar)
 
 ## Limitations
 
@@ -90,24 +89,12 @@ Ground truth: `data/ground_truth/human_labels.csv` · Annotation guide: `data/gr
 
 ## Dataset attribution
 
-SafetyDrift: Dhodapkar & Pishori, RPI/SCU  
-Paper: [arXiv:2603.27148](https://arxiv.org/abs/2603.27148)  
-License: CC-BY-NC-4.0. Contact authors for data access.
-
-ATBench: AI45Lab, Shanghai AI Lab  
-Paper: [arXiv:2601.18491](https://arxiv.org/abs/2601.18491)
+- ATBench: AI45Lab, Shanghai AI Lab. [arXiv:2601.18491](https://arxiv.org/abs/2601.18491)
+- SafetyDrift: Dhodapkar & Pishori, RPI/SCU. [arXiv:2603.27148](https://arxiv.org/abs/2603.27148) (CC-BY-NC-4.0)
 
 ## Citation
 
 ```bibtex
-@misc{dhodapkar2026safetydrift,
-  title={SafetyDrift: Evaluating Safety Alignment Drift in Agentic AI Systems},
-  author={Dhodapkar, Aditya and Pishori, Farhaan},
-  year={2026},
-  eprint={2603.27148},
-  archivePrefix={arXiv}
-}
-
 @misc{sundblad2026hro,
   title={hro-safety-eval: HRO Near-Miss Detection for AI Agent Traces},
   author={Sundblad, Ramon},
@@ -118,4 +105,4 @@ Paper: [arXiv:2601.18491](https://arxiv.org/abs/2601.18491)
 
 ---
 
-MIT License · Contact: rsundblad@udesa.edu.ar
+BlueDot Impact Technical AI Safety Sprint 2026 · MIT License · [rsundblad@udesa.edu.ar](mailto:rsundblad@udesa.edu.ar)
