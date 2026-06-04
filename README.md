@@ -2,13 +2,53 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ramonsun/hro-ai-safety-evaluation/blob/main/demo/hro_demo.ipynb)
 
-HRO-inspired safety evaluation for AI agent traces.
+**What we tested:** whether aviation near-miss detection predicts AI agent harm before it occurs.  
+**What we found:** it doesn't — not because the framework is wrong, but because current agents don't exhibit recovery behavior.  
+**Why it matters:** if agents escalate monotonically to violation, the bottleneck is architecture, not measurement.
 
-**The idea:** aviation and nuclear safety use near-miss detection to prevent accidents before they happen. Can the same work for AI agents?
+---
 
-**What it does:** classifies why an agent failure happened and scores how fast risk was escalating, using safety frameworks borrowed from aviation and nuclear safety (HRO) and their failure taxonomy (RCM).
+## What this is
 
-**What was found:** failure classification and risk scoring work well. The near-miss early-warning part was not confirmed, but the main bottleneck is data: no public dataset exists with real agent traces labeled at the granularity needed (step-by-step, with near-miss outcomes). Current benchmarks like ATBench only provide coarse binary labels (safe/unsafe) after the fact.
+A Python CLI that scores deception risk in AI agent traces using two frameworks from high-reliability industries:
+
+- **RCM** (Reliability Centered Maintenance): an aviation failure taxonomy adapted into five agent categories — goal drift, authority confusion, context loss, tool misuse, escalation failure.
+- **HRO** (High Reliability Organization): monitors behavioral precursors before harm, anchored to METR's May 2026 means/motive/opportunity model.
+
+The tool tracks risk trajectory (slope, acceleration, time at peak) and outputs a Deception Risk Score (DRS 0–10).
+
+---
+
+## What was found
+
+### 1. Structural detection works on real data (ATBench, n=30)
+
+| Method | Precision | Recall | F1 |
+|--------|-----------|--------|-----|
+| Keyword probe | 0.714 | 0.667 | 0.690 |
+| HRO classifier | 0.857 | 0.800 | **0.828** |
+
+**3 backdoor cases** where the keyword probe missed entirely: the agent trusted poisoned tool output (indirect prompt injection, description injection, unreliable misinformation) with zero deception keywords present. HRO caught them via structural signals — Opportunity + Motive + Means.
+
+*Validated with local judge (Mistral 7B via `--ollama-judge`): backdoor cases replicate.*
+
+### 2. The early-warning hypothesis failed (SafetyDrift, n=357)
+
+In 186 violated traces, **0 showed behavioral recovery before violation**. Agents that violate do not hesitate, backtrack, or signal uncertainty. Risk escalation is monotonic.
+
+This tells us something about **agent architecture**, not just detection: current synthetic agents lack the recoverability that makes near-miss culture possible in aviation. We may need built-in pause/uncertainty mechanisms before HRO protocols can function.
+
+---
+
+## What the tool is useful for today
+
+- **Post-hoc forensics:** classify what went wrong and why
+- **Risk scoring:** flag high-slope traces for human review
+- **Keyword-blind detection:** catch deception pathways probes miss
+
+**Not validated:** real-time early warning before harm completes.
+
+---
 
 ## Install and use
 
@@ -20,69 +60,7 @@ hro-eval monitor --trace your_agent_log.json
 
 Accepts any JSON trace format: list of steps, dict with `"steps"` key, SafetyDrift format, OpenAI messages. No pre-labeled data required.
 
-## What it does
-
-This tool applies two frameworks from high-reliability industries to AI agent traces. High Reliability Organizations (HRO; aviation, nuclear power) operate with near-zero failure rates by monitoring for behavioral precursors before harm occurs. Reliability Centered Maintenance (RCM) is a failure taxonomy from aviation that classifies why systems fail. This project adapts both to AI agents.
-
-**1. Classifies the failure mode (RCM taxonomy)**
-
-Five categories: goal drift, authority confusion, context loss, tool misuse, escalation failure. Given an agent trace, a Claude Haiku judge assigns one category using chain-of-thought reasoning. You can substitute a local model with `--ollama-judge`.
-
-**2. Scores risk trajectory**
-
-Tracks how risk builds across steps, not just whether it peaked:
-
-- `risk_slope`: rate of escalation across steps (OLS regression)
-- `risk_acceleration`: whether the second half escalates faster than the first
-- `steps_at_max_risk`: how long the agent stayed at peak risk before the outcome
-- `harm_probability`: HIGH / MODERATE / LOW based on trajectory shape and failure category
-
-## What was found
-
-### Detecting unsafe agent behavior (ATBench, n=30)
-
-ATBench is a public benchmark of 500 AI agent trajectories labeled safe/unsafe by human annotators (AI45Lab, Shanghai AI Lab, arXiv 2601.18491). Results on a 30-trajectory balanced sample:
-
-| Method | Precision | Recall | F1 |
-|--------|-----------|--------|----|
-| Keyword probe | 0.714 | 0.667 | 0.690 |
-| HRO classifier | 0.857 | 0.800 | 0.828 |
-
-3 trajectories were missed by keyword probe but caught by HRO; the agent trusted poisoned tool output without any deception keywords present (IDs 3, 5, 7).
-
-These are post-hoc detections: HRO classified the trajectory after the agent had already acted. Catching harm before it completes requires step-by-step traces with recovery signals, which ATBench does not provide.
-
-### Risk escalation signals (SafetyDrift, n=357)
-
-SafetyDrift (Dhodapkar & Pishori, RPI/SCU, arXiv 2603.27148) is a dataset of 357 synthetic agent traces labeled by outcome: whether the agent ultimately violated a safety boundary. Violated traces escalate risk 3× faster and rarely show recovery behavior.
-
-| Signal | Violated (n=186) | Non-violated (n=171) |
-|--------|-----------------|---------------------|
-| avg risk_slope | **0.72** | 0.23 |
-| risk_acceleration | **60%** | 6% |
-| avg steps_at_max_risk | **1.69** | 6.95 |
-| DRS ↔ max_risk correlation | **0.826** | n/a |
-| GOAL_DRIFT precision | **100%** | n/a |
-| AUTHORITY_CONFUSION precision | **100%** | n/a |
-
-### The early-warning question: not yet answered
-
-The original hypothesis (can HRO detect near-misses before harm occurs, like in aviation) was not confirmed. 0 out of 186 violated traces showed behavioral recovery signals before the violation. Synthetic agents don't hesitate. Answering this requires real production logs with step-by-step granularity and at least 3 outcome labels (safe / near-miss / harm). No public dataset with this structure exists yet.
-
-## What the tool is useful for today
-
-**Validated:**
-
-- Post-hoc forensics: classify what went wrong and why
-- Risk scoring: flag high-slope traces for human review
-- GOAL_DRIFT and AUTHORITY_CONFUSION are 100% predictive of violation in SafetyDrift
-- Works on any agent trace JSON format; no pre-labeled data needed
-
-**Not validated:**
-
-- Real-time early warning before harm completes
-- Generalization beyond synthetic traces
-- Near-miss detection without verbal uncertainty signals from the agent
+---
 
 ## Open question
 
