@@ -4,6 +4,8 @@
 
 HRO-inspired safety evaluation for AI agent traces.
 
+This tool classifies why AI agent failures happen and scores how fast risk escalates. The original goal — detecting near-misses before harm occurs, like in aviation — was not confirmed on synthetic traces. The classification and risk-scoring parts are validated and useful today.
+
 ## Install and use
 
 ```bash
