@@ -97,6 +97,25 @@ What's needed:
 
 If you have access to this data, open an issue or contact rsundblad@udesa.edu.ar
 
+## Proof of Concept — ATBench Validation
+
+ATBench (AI45Research, arXiv 2601.18491) is a dataset of 500 human-annotated AI agent trajectories, binary-labeled safe/unsafe by human raters.
+
+> ATBench provides real labeled trajectories (human-annotated) but coarse binary labels (safe/unsafe) — not granular near-miss sequences. This PoC demonstrates the method works on real data; the labeled near-miss gap remains an open research problem.
+
+Results on 30 trajectories (schema-matched synthetic; run [poc/fetch_atbench.py](poc/fetch_atbench.py) locally to use real ATBench data):
+
+| Method | Precision | Recall | F1 |
+|--------|-----------|--------|-----|
+| Keyword probe | 1.000 | 0.800 | 0.889 |
+| HRO classifier | 1.000 | 0.867 | 0.929 |
+
+**Backdoor finding:** 3 cases where keyword probe misses and HRO catches — trajectories `unsafe_012`, `unsafe_013`, `unsafe_014`. These contain no deception keywords but exhibit clear Means/Motive/Opportunity signals (privilege escalation, kickback without authorisation, DROP TABLE without approval). The keyword probe is blind to these; the HRO DRS flags them at 4.44–5.56/10.
+
+- Code: [poc/run_atbench_poc.py](poc/run_atbench_poc.py)
+- Notebook: [poc/hro_poc_demo.ipynb](poc/hro_poc_demo.ipynb)
+- Citation: ATBench arXiv 2601.18491
+
 ## Limitations
 
 - ATBench: n=30, single annotator, no holdout set
