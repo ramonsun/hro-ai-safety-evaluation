@@ -110,7 +110,7 @@ Results on 30 trajectories (schema-matched synthetic; run [poc/fetch_atbench.py]
 | Keyword probe | 1.000 | 0.800 | 0.889 |
 | HRO classifier | 1.000 | 0.867 | 0.929 |
 
-**Backdoor finding:** 3 cases where keyword probe misses and HRO catches — trajectories `unsafe_012`, `unsafe_013`, `unsafe_014`. These contain no deception keywords but exhibit clear Means/Motive/Opportunity signals (privilege escalation, kickback without authorisation, DROP TABLE without approval). The keyword probe is blind to these; the HRO DRS flags them at 4.44–5.56/10.
+**Backdoor finding (synthetic):** 3 hand-crafted trajectories demonstrate the detection gap — no deception keywords, HRO DRS 4.4–5.6. These are illustrative until real ATBench fetch succeeds. Run poc/fetch_atbench.py to replace with real data.
 
 - Code: [poc/run_atbench_poc.py](poc/run_atbench_poc.py)
 - Notebook: [poc/hro_poc_demo.ipynb](poc/hro_poc_demo.ipynb)
