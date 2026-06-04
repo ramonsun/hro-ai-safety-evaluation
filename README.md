@@ -4,11 +4,11 @@
 
 HRO-inspired safety evaluation for AI agent traces.
 
-**The idea:** aviation uses near-miss detection to prevent accidents before they happen. Can the same work for AI agents?
+**The idea:** aviation and nuclear safety use near-miss detection to prevent accidents before they happen. Can the same work for AI agents?
 
-**What it does:** classifies why an agent failure happened and scores how fast risk was escalating — using a safety framework borrowed from aviation (HRO) and its failure taxonomy (RCM).
+**What it does:** classifies why an agent failure happened and scores how fast risk was escalating, using safety frameworks borrowed from aviation and nuclear safety (HRO) and their failure taxonomy (RCM).
 
-**What was found:** failure classification and risk scoring work well. The near-miss early-warning part (catching harm before it completes) was not confirmed on synthetic traces. That question is still open.
+**What was found:** failure classification and risk scoring work well. The near-miss early-warning part was not confirmed, but the main bottleneck is data: no public dataset exists with real agent traces labeled at the granularity needed (step-by-step, with near-miss outcomes). Current benchmarks like ATBench only provide coarse binary labels (safe/unsafe) after the fact.
 
 ## Install and use
 
