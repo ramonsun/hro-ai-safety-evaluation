@@ -92,6 +92,10 @@ Ground truth: `data/ground_truth/human_labels.csv` · Annotation guide: `data/gr
 - ATBench: AI45Lab, Shanghai AI Lab. [arXiv:2601.18491](https://arxiv.org/abs/2601.18491)
 - SafetyDrift: Dhodapkar & Pishori, RPI/SCU. [arXiv:2603.27148](https://arxiv.org/abs/2603.27148) (CC-BY-NC-4.0)
 
+## Acknowledgments
+
+Peter Gebauer for mentoring this project and raising the key question about probe-based detection of pre-violation signals.
+
 ## Citation
 
 ```bibtex
