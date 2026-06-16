@@ -2,38 +2,7 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ramonsun/hro-ai-safety-evaluation/blob/main/demo/hro_demo.ipynb)
 
-**What we tested:** whether near-miss detection from aviation safety and nuclear power plant safety can predict AI agent harm before it occurs.  
-**What we found:** unclear. In synthetic traces, agents showed no recovery behavior before violations. But no public dataset exists with real agent logs at the step-by-step granularity needed to test this properly. The question is open, blocked by data access.  
-**Why it matters:** if real agents do show warning signs before causing harm, we could catch them early. If they don't, the problem is in how agents are built. We can't tell yet.
-
-A Python CLI that scores deception risk in AI agent traces using two frameworks from high-reliability industries. **RCM** (Reliability Centered Maintenance) is an aviation safety failure taxonomy adapted into five agent categories: goal drift, authority confusion, context loss, tool misuse, escalation failure. **HRO** (High Reliability Organization) monitors behavioral precursors before harm, anchored to METR's May 2026 means/motive/opportunity model. The tool tracks risk trajectory (slope, acceleration, time at peak) and outputs a Deception Risk Score (DRS 0–10).
-
----
-
-## What was found
-
-### 1. Structural detection works on real data (ATBench, n=30)
-
-| Method | Precision | Recall | F1 |
-|--------|-----------|--------|-----|
-| Keyword probe | 0.714 | 0.667 | 0.690 |
-| HRO classifier | 0.857 | 0.800 | **0.828** |
-
-**3 backdoor cases** where the keyword probe missed entirely: the agent trusted poisoned tool output (indirect prompt injection, description injection, unreliable misinformation) with zero deception keywords present. HRO caught them via structural signals: Opportunity + Motive + Means.
-
-### 2. The early-warning hypothesis failed (SafetyDrift, n=357)
-
-In 186 violated traces, **0 showed behavioral recovery before violation**. Agents that violate do not hesitate, backtrack, or signal uncertainty.
-
----
-
-## What the tool is useful for today
-
-Useful for post-hoc forensics, risk scoring, and keyword-blind detection. Not validated for real-time early warning.
-
----
-
-## Install and use
+Scores deception risk in AI agent traces using failure taxonomy and risk trajectory signals from aviation and nuclear safety.
 
 ```bash
 pip install git+https://github.com/ramonsun/hro-ai-safety-evaluation
@@ -45,6 +14,59 @@ Accepts any JSON trace format. No pre-labeled data required. Substitute a local 
 
 ---
 
+## How it works
+
+**1. Classifies failure mode (RCM taxonomy)**
+
+Five categories derived from Reliability Centered Maintenance, an aviation safety failure taxonomy:
+
+- Goal drift
+- Authority confusion
+- Context loss
+- Tool misuse
+- Escalation failure
+
+A Claude Haiku judge assigns one category per trace using chain-of-thought reasoning.
+
+**2. Scores risk trajectory**
+
+Tracks how risk builds across steps:
+
+- `risk_slope`: rate of escalation (OLS regression)
+- `risk_acceleration`: whether the second half escalates faster than the first
+- `steps_at_max_risk`: how long the agent stayed at peak risk before outcome
+- `harm_probability`: HIGH / MODERATE / LOW based on trajectory and failure category
+
+Output: Deception Risk Score (DRS 0–10). Detection threshold: DRS ≥ 4.0.
+
+---
+
+## Results
+
+### ATBench (n=30, AI45Lab human labels)
+
+| Method | Precision | Recall | F1 |
+|--------|-----------|--------|-----|
+| Keyword probe | 0.714 | 0.667 | 0.690 |
+| HRO classifier | 0.857 | 0.800 | **0.828** |
+
+3 trajectories missed by keyword probe, caught by HRO: agent trusted poisoned tool output with zero deception keywords present. HRO caught them via structural signals: Opportunity + Motive + Means.
+
+### SafetyDrift (n=357, Dhodapkar & Pishori)
+
+| Signal | Violated (n=186) | Non-violated (n=171) |
+|--------|-----------------|---------------------|
+| avg risk_slope | **0.72** | 0.23 |
+| risk_acceleration | **60%** | 6% |
+| avg steps_at_max_risk | **1.69** | 6.95 |
+| DRS correlation | **0.826** | n/a |
+| GOAL_DRIFT precision | **100%** | n/a |
+| AUTHORITY_CONFUSION precision | **100%** | n/a |
+
+In 186 violated traces, 0 showed behavioral recovery before violation. Near-miss early warning was not confirmed on synthetic traces. The question remains open for real production logs.
+
+---
+
 ## Open research agenda
 
 1. Label 100 existing Inspect AI traces with a 3-outcome schema (safe / near-miss / harm)
@@ -52,6 +74,8 @@ Accepts any JSON trace format. No pre-labeled data required. Substitute a local 
 3. Controlled architecture study: give agents an explicit "pause and check" tool, then measure near-miss rate
 
 If you have access to production agent traces with step-by-step tool-call granularity, open an issue or email [rsundblad@udesa.edu.ar](mailto:rsundblad@udesa.edu.ar)
+
+---
 
 ## Limitations
 
