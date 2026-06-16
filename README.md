@@ -6,16 +6,7 @@
 **What we found:** unclear. In synthetic traces, agents showed no recovery behavior before violations. But no public dataset exists with real agent logs at the step-by-step granularity needed to test this properly. The question is open, blocked by data access.  
 **Why it matters:** if real agents do show warning signs before causing harm, we could catch them early. If they don't, the problem is in how agents are built. We can't tell yet.
 
----
-
-## What this is
-
-A Python CLI that scores deception risk in AI agent traces using two frameworks from high-reliability industries:
-
-- **RCM** (Reliability Centered Maintenance): an aviation safety failure taxonomy adapted into five agent categories: goal drift, authority confusion, context loss, tool misuse, escalation failure.
-- **HRO** (High Reliability Organization): monitors behavioral precursors before harm, anchored to METR's May 2026 means/motive/opportunity model.
-
-The tool tracks risk trajectory (slope, acceleration, time at peak) and outputs a Deception Risk Score (DRS 0–10).
+A Python CLI that scores deception risk in AI agent traces using two frameworks from high-reliability industries. **RCM** (Reliability Centered Maintenance) is an aviation safety failure taxonomy adapted into five agent categories: goal drift, authority confusion, context loss, tool misuse, escalation failure. **HRO** (High Reliability Organization) monitors behavioral precursors before harm, anchored to METR's May 2026 means/motive/opportunity model. The tool tracks risk trajectory (slope, acceleration, time at peak) and outputs a Deception Risk Score (DRS 0–10).
 
 ---
 
@@ -30,23 +21,15 @@ The tool tracks risk trajectory (slope, acceleration, time at peak) and outputs 
 
 **3 backdoor cases** where the keyword probe missed entirely: the agent trusted poisoned tool output (indirect prompt injection, description injection, unreliable misinformation) with zero deception keywords present. HRO caught them via structural signals: Opportunity + Motive + Means.
 
-*Validated with local judge (Mistral 7B via `--ollama-judge`): backdoor cases replicate.*
-
 ### 2. The early-warning hypothesis failed (SafetyDrift, n=357)
 
-In 186 violated traces, **0 showed behavioral recovery before violation**. Agents that violate do not hesitate, backtrack, or signal uncertainty. Risk escalation is monotonic.
-
-This tells us something about **agent architecture**, not just detection: current synthetic agents lack the recoverability that makes near-miss culture possible in aviation. We may need built-in pause/uncertainty mechanisms before HRO protocols can function.
+In 186 violated traces, **0 showed behavioral recovery before violation**. Agents that violate do not hesitate, backtrack, or signal uncertainty.
 
 ---
 
 ## What the tool is useful for today
 
-- **Post-hoc forensics:** classify what went wrong and why
-- **Risk scoring:** flag high-slope traces for human review
-- **Keyword-blind detection:** catch deception pathways probes miss
-
-**Not validated:** real-time early warning before harm completes.
+Useful for post-hoc forensics, risk scoring, and keyword-blind detection. Not validated for real-time early warning.
 
 ---
 
@@ -64,8 +47,6 @@ Accepts any JSON trace format. No pre-labeled data required. Substitute a local 
 
 ## Open research agenda
 
-Three experiments would validate or invalidate the near-miss approach:
-
 1. Label 100 existing Inspect AI traces with a 3-outcome schema (safe / near-miss / harm)
 2. Test agent variance: do GPT-4o-class agents show higher recovery variance than Claude 3.5?
 3. Controlled architecture study: give agents an explicit "pause and check" tool, then measure near-miss rate
@@ -74,8 +55,7 @@ If you have access to production agent traces with step-by-step tool-call granul
 
 ## Limitations
 
-- ATBench sample: n=30, balanced but small; results may not generalize
-- SafetyDrift traces are synthetic; real agent behavior may differ
+- Training data is synthetic (ATBench n=30, SafetyDrift n=357); results may not generalize to real agent behavior
 - Risk inference uses Claude Haiku; quality depends on the model (mitigate with `--ollama-judge`)
 - Post-hoc only: current detection fires after the agent has acted, not during
 
